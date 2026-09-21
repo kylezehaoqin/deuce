@@ -18,7 +18,26 @@ most consequential: *"how often does she go down the line off the backhand"*
 depends entirely on the orientation, and getting it backwards produces answers
 that look completely plausible and are exactly wrong.
 
-## The structural insight (this part is settled)
+## Resolved by the spec (2026-09-21)
+
+The Instructions tab of `MatchChart 0.3.2.xlsm` states it outright:
+
+> `1` = to a right-hander's forehand side / left-hander's backhand side
+> `2` = down the middle of the court
+> `3` = to a right-hander's backhand side / left-hander's forehand side
+
+**Direction is absolute**, naming fixed halves of the court by reference to a
+right-handed receiver. Not relative to the hitter. Everything derived below from
+first principles was right — and was also written down the whole time, in a file
+listed in the upstream repo. See `errors.md` E10.
+
+Two further facts from the spec that bear directly on the remaining gap:
+
+- **Forced errors require only shot type + `#`.** `b#` is complete and valid, so
+  point-ending forced errors frequently carry **no direction**.
+- **Direction is optional on every shot.** `fbh` is a valid rally.
+
+## The structural insight (confirmed by the spec)
 
 Sackmann's `ShotDirection.csv` has five columns:
 

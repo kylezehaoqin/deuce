@@ -12,8 +12,8 @@ with the traps spelled out. Kyle writes those, then asks for review — and revi
 means pushing back when something is wrong, not rubber-stamping.
 
 What counts as judgment-carrying, and therefore his: grain decisions, parsers,
-statistical controls, anything shaping the agent's behavior, and any hypothesis
-about what the data means. What isn't, and therefore isn't worth the round trip:
+statistical controls, anything shaping the agent's behavior, and any tennis
+hypothesis (`lessons/hypotheses-tennis.md`). What isn't, and therefore isn't worth the round trip:
 ingest plumbing, boilerplate, staging models, config, test harnesses.
 
 Two honesty rules on top:
@@ -78,7 +78,7 @@ Python is pinned to 3.12 (`.python-version`) — dbt-core and Dagster do not sup
 - **Investigations change one thing at a time.** Use
   `sql/investigations/` — the harness is fixed, one CTE is the hypothesis. Testing
   two at once means you can't attribute the improvement (this already happened —
-  `lessons/hypotheses.md` H10).
+  `lessons/hypotheses-data.md` H10).
 - **Write the prediction before running the query.** The gap between prediction
   and result is the signal; without it a surprising result just looks like a result.
 
@@ -99,9 +99,15 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
   this kind of variance exists.
 - **Charting conventions drifted.** The same parser is ~90% accurate on 2020s
   matches and ~55% pre-2010. Never quote a parsed statistic without its era.
-- Shot-direction orientation in `docs/mcp-notation.md` is **unresolved** (marked
-  ❓). Validate any direction-dependent metric against
-  `charting-*-stats-ShotDirection.csv` before building on it.
+- **The codebook is authoritative now.** `docs/mcp-notation.md` is transcribed
+  from the Instructions tab of `MatchChart 0.3.2.xlsm` (the upstream spec). Don't
+  re-derive a code from the data — look it up, then verify the *implementation*
+  against an oracle. (errors E10)
+- **Shot direction is OPTIONAL in the spec**, as is return depth. `fbh` is a valid
+  rally. Any rate over directions has "shots with a direction charted" as its
+  denominator, not "shots". Missingness correlates with charter experience and
+  era, so it is not random.
+- `7`/`8`/`9` are **service-return depth only**, not general shot depth.
 - 11 rows in the upstream matches files are field-shifted (missing both player-name
   fields). The loader rejects them on field count; they land in
   `raw.error_records`. Re-loading does not delete rows that *became* invalid —

@@ -1,4 +1,4 @@
-# Match Charting Project shot notation — working codebook
+# Match Charting Project shot notation — codebook
 
 Every point in `raw.mcp_points` carries its rally as a single string in
 `first_serve` / `second_serve`. Example:
@@ -7,148 +7,217 @@ Every point in `raw.mcp_points` carries its rally as a single string in
 4b37y1r3n#
 ```
 
-Read left to right: **serve out wide** (`4`) → **backhand** (`b`) **to direction 3**
-(`3`) **at depth 7** (`7`) → **backhand drop shot** (`y`) **to direction 1** (`1`) →
-**forehand slice** (`r`) **to direction 3** (`3`) → **into the net** (`n`) as a
-**forced error** (`#`).
+Serve **out wide** (`4`) → **backhand** (`b`) **to a righty's backhand side** (`3`)
+**landing inside the service boxes** (`7` — return depth) → **backhand drop shot**
+(`y`) **to a righty's forehand side** (`1`) → **forehand slice** (`r`) **to a
+righty's backhand side** (`3`) → **into the net** (`n`), **forced error** (`#`).
 
-Turning that string into one row per shot is the whole shot-grain modelling job.
-
----
-
-## Confidence levels
-
-This file is a **working** codebook. Codes are marked:
-
-- ✅ **verified** — confirmed against `data_dictionary.txt` or observed unambiguously in the data
-- ⚠️ **community consensus** — widely used, but confirm before you build a metric on it
-- ❓ **unverified** — orientation/meaning genuinely ambiguous; see *How to verify* below
-
-The authoritative source is the **Instructions tab of `MatchChart 0.3.2.xlsm`** in
+**Source of record:** the *Instructions* tab of `MatchChart 0.3.2.xlsm` in
 [the upstream repo](https://github.com/JeffSackmann/tennis_MatchChartingProject).
-`data_dictionary.txt` documents the *columns*, not the *codes*.
+That file is the spec; `data_dictionary.txt` documents only the CSV *columns*.
+Everything below is transcribed from it and is therefore **authoritative**, not
+inferred. Where our parser deviates from the spec, that's a bug in the parser.
 
 ---
 
-## Serve
+## Serves
 
-| Code | Meaning | Confidence |
-|---|---|---|
-| `4` | out wide | ✅ |
-| `5` | body | ✅ |
-| `6` | down the T | ✅ |
-| `0` | direction unknown / not charted | ⚠️ |
+Direction — **identical in both the deuce and ad courts**:
 
-Verified by reconciling `left(notation, 1)` against
-`charting-m-stats-ServeDirection.csv`, and by reading double faults: point 115 of
-`20260521-M-Roland_Garros-Q3-…` is `4n,4d` — a serve wide into the net, then a
-serve wide long. Two faults, no rally, point to the returner.
+| Code | Meaning |
+|---|---|
+| `4` | out wide |
+| `5` | body |
+| `6` | down the T |
+| `0` | direction unknown |
 
-Which physical corner "wide" and "T" point at depends on the court side, and the
-court side alternates every point within a game. Derive it — don't chart it:
-point 1 of a game is the deuce court, and it alternates from there. `point_in_game`
-in `stg_points` exists for exactly this.
+Fault types, appended to the direction:
 
-A **second serve** is present (`second_serve` non-empty) iff the first serve was a
-fault. `stg_points.rally_notation` already picks the serve that was actually played.
+| Code | Meaning |
+|---|---|
+| `n` | net (including net cords that aren't lets) |
+| `w` | wide |
+| `d` | deep |
+| `x` | wide *and* deep |
+| `g` | foot fault |
+| `e` | unknown fault type |
+| `!` | shank (used instead of the fault-type letter) |
+
+Other serve codes: `c` = a let (repeatable — `cc4e` is two lets then a wide fault
+of unknown direction), `V` = server lost a first serve to a time violation,
+`+` = serve-and-volley attempt, placed after the direction (`4+`, or `4+w` if it
+faulted).
+
+**Points that never get past the serve:**
+
+| Code | Meaning |
+|---|---|
+| `5*` | ace |
+| `6#` | **unreturnable** — returner touched it but couldn't return it |
+
+Sackmann's rule for "unreturnable": the returner failed to get a full racquet on
+the ball, failed to get the return to the net, or wildly missed. Anything else is
+a return error, coded as a rally shot with `#` or `@`.
 
 ## Rally shot types
 
 | Code | Shot | Code | Shot |
 |---|---|---|---|
-| `f` | forehand (topspin/flat) | `b` | backhand |
-| `r` | forehand slice | `s` | backhand slice |
+| `f` | forehand groundstroke | `b` | backhand groundstroke |
+| `r` | forehand slice / chip | `s` | backhand slice / chip |
 | `v` | forehand volley | `z` | backhand volley |
-| `o` | overhead / smash | `p` | backhand overhead |
+| `o` | overhead / smash | `p` | "backhand" overhead |
 | `u` | forehand drop shot | `y` | backhand drop shot |
 | `l` | forehand lob | `m` | backhand lob |
 | `h` | forehand half-volley | `i` | backhand half-volley |
 | `j` | forehand swinging volley | `k` | backhand swinging volley |
-| `t` | trick shot (tweener etc.) | `q` | unknown |
+| `t` | trick shot (tweener, behind-the-back) | `q` | unknown shot |
 
-Confidence: ⚠️ for the individual letters, but the **set as a whole is verified**:
-treating exactly these 18 letters as "a shot happened" reproduces Sackmann's own
-rally-length buckets for **91.6% of 2020s matches exactly** (see *Measured accuracy*
-below). A wrong letter in that set would not survive that test.
+Slices exclude drop shots, which have their own codes.
 
-## Direction
+## Direction — the part that matters most
 
-A digit `1` / `2` / `3` immediately after a shot-type letter.
-
-| Code | Meaning | Confidence |
-|---|---|---|
-| `1` | one side of the court | ❓ orientation |
-| `2` | middle | ⚠️ |
-| `3` | the other side | ❓ orientation |
-
-**This is the single most important thing to verify**, because "did they go
-down-the-line or crosscourt?" depends entirely on getting the orientation right,
-and getting it backwards produces answers that look plausible and are wrong.
-
-## Depth and terminators
-
-| Code | Meaning | Confidence |
-|---|---|---|
-| `7` / `8` / `9` | shallow / mid / deep | ⚠️ |
-| `*` | winner | ⚠️ |
-| `@` | unforced error | ✅ |
-| `#` | forced error | ✅ |
-| `n` `w` `d` `x` | error was: net / wide / deep / wide+deep | ⚠️ |
-| `+` `-` `=` `^` `!` | approach, net approach, and shot-quality markers | ❓ |
-
----
-
-## How to verify (do this before trusting a parser)
-
-Sackmann ships his **own** aggregations of these same strings. That makes them a
-free oracle for your parser:
-
-| Your parse of… | Cross-check against |
+| Code | Meaning |
 |---|---|
-| shot type counts | `charting-m-stats-ShotTypes.csv` |
-| shot directions | `charting-m-stats-ShotDirection.csv` |
-| direction → outcome | `charting-m-stats-ShotDirOutcomes.csv` |
-| serve placement | `charting-m-stats-ServeDirection.csv` (already ingested) |
-| rally lengths | `charting-m-stats-Rally.csv` |
+| `1` | to a **right-hander's forehand** side / a left-hander's backhand side |
+| `2` | down the middle |
+| `3` | to a **right-hander's backhand** side / a left-hander's forehand side |
+| `0` | unknown |
 
-Pick ~20 matches, parse them, aggregate to the same grain, and diff. If your
-forehand count matches Sackmann's for 20 matches, your shot-type mapping is right.
-If your `direction = 3` counts match his crosscourt column, your orientation is right.
+Three consequences, all load-bearing:
 
-**Make that diff a dbt test**, not a one-off script. It is the strongest data-quality
-story in this repo: a parser validated against an independent implementation of the
-same spec, re-checked on every build.
+**1. Direction is absolute, not relative to the hitter.** `1` and `3` name fixed
+halves of the court, defined by reference to a right-handed receiver. They do not
+mean "crosscourt" or "down the line" — those depend on where the *hitter* is
+standing, which depends on where the previous ball went. Converting `1/2/3` into
+crosscourt / down-the-line / inside-out / inside-in therefore requires a
+**stateful** parse that tracks court position across shots. See `lessons/005`.
+
+**2. Direction is measured at the baseline, not at the bounce.** Where the ball
+crossed (or would have crossed) the opponent's baseline. A crosscourt return off
+a wide serve may bounce mid-court and still be a `1`.
+
+**3. Direction is OPTIONAL.** `fbh` — forehand, backhand, half-volley with no
+directions at all — is explicitly valid. Any parser keyed on "shot letter followed
+by a direction digit" silently skips these, and any *rate* computed over them has
+a denominator that isn't what you think it is.
+
+Zone sizes are approximate: think `2` as the middle ~40% of the court and `1`/`3`
+as the outer ~30% each.
+
+## Depth — return depth only
+
+| Code | Meaning |
+|---|---|
+| `7` | within the service boxes |
+| `8` | behind the service line, nearer the service line than the baseline |
+| `9` | nearer the baseline than the service line |
+
+**These apply to service returns only**, not to groundstrokes generally. A service
+return that lands in takes three keystrokes: type, direction, depth (`f37`). Also
+optional.
+
+## Rally endings
+
+| Code | Meaning |
+|---|---|
+| `*` | winner |
+| `@` | unforced error |
+| `#` | forced error |
+
+The errored shot **is coded**, including the shot the loser tried to make, with an
+error type (`n` `w` `d` `x` `!` `e`) before the `@` / `#`.
+
+Required keystrokes differ, and this asymmetry matters for parsing:
+
+- **Unforced error:** shot type + error type + `@`. Direction optional.
+- **Forced error:** shot type + `#` only. `b#` is valid and complete.
+
+So point-ending forced errors frequently carry **no direction at all**, while
+unforced errors often do.
+
+## Court-position modifiers
+
+Placed **immediately after the shot letter, before the direction**:
+
+| Code | Meaning | Example |
+|---|---|---|
+| `+` | approach shot (or serve-and-volley on a serve) | `b+2` |
+| `-` | shot taken at the net | `f-1` |
+| `=` | shot taken at the baseline | `o=2` |
+| `;` | clipped the net cord | `f;1*` |
+| `^` | stop volley / drop volley | `z^2*` |
+
+Volleys, half-volleys, swinging volleys and smashes are assumed at the net;
+groundstrokes, slices, drop shots, lobs and trick shots at the baseline. `-` and
+`=` exist to say otherwise.
+
+## Unusual situations
+
+| Code | Meaning |
+|---|---|
+| `S` / `R` | charter missed the point; server / returner won it |
+| `P` / `Q` | point penalty against the server / returner |
+| `C` | play stopped for a challenge that proved incorrect |
 
 ---
 
-## Measured accuracy (rally length, 7,529 matches)
+## Coverage is deliberately uneven
 
-Rally length parsed as:
+Sackmann instructs charters to learn the system in layers — shot types first,
+then direction, then return depth, then court position — and to prefer an
+"unknown" code over missing the next shot. There is an unknown code at every
+level: `0` (direction), `q` (shot type), `e` (error type), `S`/`R` (whole point).
+
+His own framing: *"having 95% of the data from a match is usually sufficient to
+identify patterns and tendencies."*
+
+For us that means **missingness is not random**. It correlates with charter
+experience, broadcast quality and how fast the point was. Any rate computed from
+these fields needs its denominator stated, and `parse_confidence` exists because
+the same bias shows up across charting eras.
+
+---
+
+## Measured accuracy — rally length
+
+The spec settles what the codes *mean*; it doesn't settle whether our SQL
+implements them correctly. That still needs an oracle.
 
 ```sql
 GREATEST(1,
-    1                                                            -- the serve
-  + length(regexp_replace(rally, '[^fbrsvzopuylmhijktq]', '', 'g'))  -- shot letters
-  - CASE WHEN rally ~ '[@#]$' THEN 1 ELSE 0 END)                 -- the miss doesn't count
+    1                                                                  -- the serve
+  + length(regexp_replace(rally, '[^fbrsvzopuylmhijktq]', '', 'g'))    -- shot letters
+  - CASE WHEN rally ~ '[@#]$' THEN 1 ELSE 0 END)                       -- the miss doesn't count
 ```
 
-Two conventions had to be discovered by diffing against `charting-m-stats-Rally.csv`,
-not by reading a spec:
-
-1. **Sackmann excludes the errored shot.** A rally ending `…3n#` counts the shots
-   before the miss, not the miss.
-2. **…but never below 1.** An unreturned serve (`4#`) is rally length 1, not 0.
+Two conventions were recovered by diffing against
+`charting-*-stats-Rally.csv` before the spec was consulted, and both are
+consistent with it: Sackmann excludes the errored shot, but an unreturned serve
+still counts as a rally of 1.
 
 Agreement on all four of his buckets (1-3 / 4-6 / 7-9 / 10+):
 
-| Charting era | Matches | Exact | Within 2 points | Avg % of points misbucketed |
-|---|---:|---:|---:|---:|
-| 2020s | 3,336 | **91.6%** | 96.7% | 0.18% |
-| 2010s | 2,231 | **83.1%** | 92.6% | 0.46% |
-| pre-2010 | 1,962 | **54.0%** | 67.0% | 2.73% |
+| Charting era | Matches | Exact | Within 2 points |
+|---|---:|---:|---:|
+| 2020s | 5,886 | **90.0%** | — |
+| 2010s | 3,516 | **82.5%** | — |
+| pre-2010 | 2,376 | **55.2%** | — |
 
-**Charting conventions drifted.** The notation was not stable across the project's
-history, and a parser tuned on modern matches degrades badly on old ones. Any mart
-built on parsed shots should either filter to `match_date >= 2010` or carry a
-parse-confidence flag — and say which, out loud, in its description. An agent that
-quotes a pre-2010 rally-length statistic without that caveat is confidently wrong.
+Regression-guarded in `dbt/tests/assert_rally_length_matches_oracle.sql`.
+
+**Charting conventions drifted.** A parser tuned on modern matches degrades badly
+on old ones, so every parsed row carries `parse_confidence` and the agent must
+disclose it rather than compare across eras silently.
+
+## Still to verify against the oracles
+
+| Claim | Oracle | State |
+|---|---|---|
+| Rally length | `stats-Rally.csv` | ✅ 90.0% (2020s), regression-tested |
+| Shot-type letters | `stats-ShotTypes.csv` | not yet diffed |
+| Direction → tactical terms | `stats-ShotDirection.csv` | `lessons/005`, ~5% scope gap open |
+| Direction → outcome | `stats-ShotDirOutcomes.csv` | not yet diffed |
+
+The spec tells you what the parser *should* do. The oracle tells you what yours
+*does*. You need both.

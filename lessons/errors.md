@@ -19,6 +19,7 @@ recurs.
 | [E7](#e7) | Regex matched 1% of expected | wrong model of the data | Look at the data before tuning the pattern |
 | [E8](#e8) | Claimed "several hundred MB" | unverified claim | Measure before you document |
 | [E9](#e9) | `.gitignore` swallowed the lessons folder | pattern scope | A leading slash anchors to the repo root |
+| [E10](#e10) | Reverse-engineered a spec that was already written | research order | Look for the spec before deriving it |
 
 ---
 
@@ -155,3 +156,45 @@ exclude a *specific* file, anchor it.
 **Related to E4:** both are silent no-ops. The tell in each case was a count that
 didn't change — 18 tests instead of 27, 2 staged files instead of 11. **When an
 operation should change a number, check the number.**
+
+## E10
+**Symptom:** three sessions spent recovering notation conventions by diffing
+against Sackmann's aggregations — the errored-shot rule, the unreturned-serve
+clamp, the modifier characters, the direction orientation. `docs/mcp-notation.md`
+carried ⚠️ and ❓ confidence markers throughout, and `lessons/005` framed the
+orientation as "the one genuinely unresolved question."
+
+**Cause:** all of it is documented in the Instructions tab of
+`MatchChart 0.3.2.xlsm`, in the upstream repo. That file appeared in the very
+first directory listing of the source repo, second line of the output. It was
+never opened — dismissed as a spreadsheet template rather than recognised as the
+spec. `data_dictionary.txt` was read instead, and it documents only the CSV
+*columns*, which made the codes look genuinely undocumented.
+
+**Fix:** read the spreadsheet. `docs/mcp-notation.md` is now transcribed from it
+and every ⚠️/❓ is gone.
+
+**Rule:** before reverse-engineering a format, spend five minutes establishing
+whether it has a spec — and treat every file in the source repo as a candidate,
+including the ones whose extension suggests they're not documentation. The cost
+here wasn't the derivation itself; it was **asserting that something was
+unknowable when it was merely unread.** `lessons/005` claimed a question was open
+that had a published answer.
+
+**The honest counterweight:** the reverse-engineering wasn't wasted, and this is
+the part worth keeping. The spec says what the codes *mean*; it cannot say
+whether our SQL implements them correctly. The oracle diff produced the 90.0% /
+82.5% / 55.2% agreement rates and surfaced the era gradient — **neither of which
+is in the spec, and the era gradient is the single most useful finding in the
+repo.** So: read the spec *first*, then diff against the oracle anyway. They
+answer different questions, and skipping the second is the more expensive mistake.
+
+**Corollaries found on reading it**, each of which would have caused wrong
+numbers downstream:
+- `7`/`8`/`9` are **service-return depth only**. Our codebook described them as
+  general shot depth.
+- Shot direction is **optional**. Any direction rate has a denominator of "shots
+  with a direction charted", and that missingness is not random.
+- **Forced errors need only shot type + `#`** — so they usually carry no
+  direction. This is a strong candidate explanation for the open gap in
+  `lessons/005`.

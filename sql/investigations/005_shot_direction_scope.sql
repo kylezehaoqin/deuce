@@ -14,6 +14,17 @@
 --   * Forehand slice 'r' is NOT counted      -> [fbs] beats [fbsr]
 --   * Serve returns appear to be excluded    -> stripping them helped a lot
 --
+-- FROM THE SPEC (MatchChart 0.3.2.xlsm, Instructions tab -- authoritative):
+--   * Direction 1/2/3 is ABSOLUTE: 1 = to a righty's forehand side, 3 = to a
+--     righty's backhand side. Not relative to the hitter.
+--   * Direction is OPTIONAL on every shot. 'fbh' is a valid rally. So our count
+--     already silently skips undirected shots -- and so, presumably, does his.
+--   * Forced errors need only shot-type + '#'. 'b#' is complete. Point-ending
+--     forced errors therefore usually carry NO direction, which means they were
+--     never in our count to begin with -- H10a can only explain the gap via
+--     UNFORCED errors, which do often carry one.
+--   * 7/8/9 are SERVICE-RETURN depth, not general shot depth.
+--
 -- BASELINE to beat (the expression currently in CANDIDATE below):
 --   avg gap  +19.5 shots/match   |   exact agreement  1.2%
 --   We are counting TOO MANY. The remaining error is ~5%.

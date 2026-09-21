@@ -10,7 +10,7 @@ number that is directly comparable to the last number.
 That constraint is the whole point. The failure mode when chasing a discrepancy
 is changing two things at once and improving the result — after which you know
 you're closer but not why, and you can't undo the half that hurt. (That happened
-in this very investigation; see `lessons/hypotheses.md` H10.)
+in this very investigation; see `lessons/hypotheses-data.md` H10.)
 
 ## Running one
 
@@ -28,7 +28,7 @@ absent-mindedly is a loop you'll actually use.
    surprising result just looks like a result.
 2. **Change one thing.** If you can't attribute the improvement, you haven't
    learned anything you can reuse.
-3. **Log the round in `lessons/hypotheses.md`** — including the rounds that made
+3. **Log the round in `lessons/hypotheses-data.md`** — including the rounds that made
    it worse. Especially those.
 4. **When it converges, promote it.** A settled investigation becomes a macro
    plus a dbt test (see `mcp_rally_length` and

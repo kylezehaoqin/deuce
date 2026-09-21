@@ -1,6 +1,15 @@
-# Hypothesis log
+# Hypothesis log — the data
 
-Every claim made about this data, how it was tested, and whether it survived.
+Claims about **the format**: what the columns mean, how the notation encodes a
+rally, what upstream conventions are. These are questions with a right answer
+that someone already knows — they get settled by reconciliation against the spec
+or an oracle, not by statistics.
+
+Claims about **tennis** — "Federer is a first-striker", "momentum is a myth" —
+live in [hypotheses-tennis.md](hypotheses-tennis.md). Those are different in kind:
+nobody holds the answer key, so they're settled by evidence, sample size and a
+control, and they stay provisional.
+
 Append, don't edit — a refuted hypothesis is the most useful entry in the file.
 
 **Format:** what I believed → how I could be wrong → what the data said → verdict.

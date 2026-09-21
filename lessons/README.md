@@ -24,10 +24,21 @@ interview answer.
 
 Plus two running logs:
 
-- **[hypotheses.md](hypotheses.md)** — every claim we made about the data, how we
-  tested it, and whether it survived. Including the ones that didn't.
+- **[hypotheses-data.md](hypotheses-data.md)** — claims about the *format*: what
+  a column means, how the notation encodes a rally. Someone already knows the
+  answer; these get settled against the spec or an oracle and then they're done.
+- **[hypotheses-tennis.md](hypotheses-tennis.md)** — claims about *the game*:
+  "Federer is not a grinder", "momentum is a myth". Nobody holds the answer key,
+  so these need a stated falsifier, a named confound and a scope — and they stay
+  provisional. They double as the agent's eval set.
 - **[errors.md](errors.md)** — every error hit, its root cause, and the general
   rule it taught. Including the self-inflicted ones.
+
+Keeping the two hypothesis logs apart matters more than it looks. They have
+different standards of proof: a format question is settled by reconciliation and
+is then closed, while a tennis question is settled by evidence and can be
+reopened by a bigger sample or a confound nobody thought of. Filing them together
+invites applying the wrong standard to both.
 
 ## How to use this
 
