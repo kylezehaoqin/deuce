@@ -1,0 +1,77 @@
+version: 2
+
+models:
+  - name: stg_matches
+    description: One row per charted match, typed and with match_id decomposed.
+    columns:
+      - name: match_id
+        description: Natural key, carried through from the source.
+        data_tests: [not_null, unique]
+      - name: tour
+        description: M (men's) or W (women's), parsed from match_id.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['M', 'W']
+      - name: match_date
+        description: Date the match was played.
+        data_tests: [not_null]
+      - name: surface
+        description: Court surface as charted. Free text upstream -- values are not enforced.
+      - name: best_of
+        description: 3 or 5.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [3, 5]
+                quote: false
+              config:
+                severity: warn
+
+  - name: stg_points
+    description: One row per point, typed. Shot notation preserved verbatim.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [match_id, point_number]
+    columns:
+      - name: match_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_matches')
+                field: match_id
+              # Points files cover eras the matches file may lag on; surface it
+              # as a warning rather than breaking the build on upstream drift.
+              config:
+                severity: warn
+      - name: point_number
+        data_tests: [not_null]
+      - name: game_number
+        description: Game number within the match, starting at 1.
+      - name: point_in_game
+        description: >
+          Point number within the game, when the charter's spreadsheet version
+          recorded it. Null for older matches -- do not assume it is present.
+      - name: server_player_num
+        description: Which of the two charted players served this point.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2]
+                quote: false
+      - name: point_winner_num
+        description: Which player won the point. Null on unscored/retired points.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2]
+                quote: false
+              config:
+                severity: warn
+      - name: rally_notation
+        description: >
+          The shot sequence actually played -- second_serve when the first serve
+          was a fault, otherwise first_serve. This is the column every shot-grain
+          model parses. See docs/mcp-notation.md.

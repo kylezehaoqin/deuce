@@ -1,0 +1,259 @@
+# Tennis Analytics Agent — Eval / Demo / Mart-Spec Set
+#
+# Each entry does triple duty:
+#   1. DEMO prompt   — what you'd type into the agent to show it off
+#   2. MART spec     — the dbt models the answer requires (drives Layer 1)
+#   3. EVAL case     — a regression test for the agent (drives Week-3 eval harness)
+#
+# SCORING (why it works before the data is even loaded):
+#   Grade each answer on three axes.
+#     a. query_correctness — does the generated SQL use the tables/filters/aggregation
+#        in `reference_sql`? (rubric match — grade this from day one)
+#     b. grounding         — does the answer cite the source rows / matches it used,
+#        and refuse when the data can't support a claim? (grade from day one)
+#     c. answer_correctness — does the value match `expected`? (fill `expected` ONCE by
+#        hand-running reference_sql after the marts exist, then grade going forward)
+#
+#   Pre-data:  score a + b.   Post-data: score a + b + c.
+#
+# NOTE: table/column names below assume the staging + mart schema in
+#   career-files-claude/08-data-eng-project-benchmarks.md. Reconcile names to the
+#   ACTUAL schema once built — reference_sql is a grading rubric, not gospel.
+#
+# Data: Jeff Sackmann's Match Charting Project (CC BY-NC-SA 4.0 — attribution required).
+
+meta:
+  dataset: match-charting-project
+  grain_note: "stg_shots = one row per shot; point/serve context columns joined from the point parse"
+  difficulty_levels: [sql, sql+semantic, multi-step, guardrail]
+
+questions:
+
+  # ─────────────── SERVE & SERVE+1 ───────────────
+  - id: serve-01
+    question: "On second-serve points at 30–40, where does {player} serve — wide, body, or T — and how predictable is it?"
+    category: serve
+    difficulty: sql
+    marts: [mart_serve_patterns]
+    needs_columns: [player_id, serve_number, court_side, point_score, serve_direction]
+    answer_shape: "Distribution over {wide, body, T} + a predictability score (entropy, low = predictable)."
+    reference_sql: |
+      -- filter serve_number = 2 AND point_score = '30-40', group by serve_direction,
+      -- return share per direction AND -SUM(p*LN(p)) as entropy
+      SELECT serve_direction,
+             COUNT(*)*1.0 / SUM(COUNT(*)) OVER () AS share
+      FROM mart_serve_patterns
+      WHERE player_id = :player AND serve_number = 2 AND point_score = '30-40'
+      GROUP BY serve_direction;
+    expected: TBD   # hand-fill after data load: the modal direction + its share + entropy value
+    grounding: "must state N (sample size) and cite the matches; if N < 20 say the sample is thin, don't over-claim"
+
+  - id: serve-02
+    question: "After a wide serve on the deuce court, how often is the next shot a forehand into the open court, and does the server win those points?"
+    category: serve
+    difficulty: multi-step
+    marts: [mart_serve_plus_one]
+    needs_columns: [serve_direction, court_side, next_shot_type, next_shot_direction, point_winner]
+    answer_shape: "A rate (serve+1 forehand to open court / all wide-deuce serves) and the point-win rate on that pattern."
+    reference_sql: |
+      -- rally_position = 2 (the serve+1), shot_type = 'forehand', direction = open court
+      -- relative to serve; win rate = point_winner = server
+      SELECT
+        AVG((next_shot_type='forehand' AND next_shot_direction='open')::int) AS serve_plus_one_rate,
+        AVG((point_winner='server')::int) FILTER (WHERE next_shot_type='forehand' AND next_shot_direction='open') AS win_rate
+      FROM mart_serve_plus_one
+      WHERE serve_direction='wide' AND court_side='deuce' AND player_id=:player;
+    expected: TBD
+    grounding: "cite matches; distinguish 'point ended on serve+1' vs 'pattern started the point'"
+
+  - id: serve-03
+    question: "Who is the biggest first-strike player (highest win rate on points ending in ≤4 shots) versus the biggest grinder (≥9 shots)?"
+    category: serve
+    difficulty: sql
+    marts: [mart_player_stats, mart_rally_length]
+    needs_columns: [player_id, rally_length_bucket, point_winner]
+    answer_shape: "Ranked leaderboard: win rate in the 0–4 bucket vs the 9+ bucket, players with the largest skew each way."
+    reference_sql: |
+      SELECT player_id, rally_length_bucket,
+             AVG((point_winner=player_id)::int) AS win_rate
+      FROM mart_rally_length
+      GROUP BY player_id, rally_length_bucket;   -- then compare 0-4 vs 9+ per player
+    expected: TBD
+    grounding: "require a minimum points threshold (e.g., ≥200 charted points) so small samples don't top the board"
+
+  # ─────────────── RALLY SHAPE ───────────────
+  - id: rally-01
+    question: "Show {player}'s win rate by rally length (0–4, 5–8, 9+ shots)."
+    category: rally
+    difficulty: sql
+    marts: [mart_rally_length]
+    needs_columns: [player_id, rally_length_bucket, point_winner]
+    answer_shape: "Three win-rate numbers, one per bucket — the player's style fingerprint."
+    reference_sql: |
+      SELECT rally_length_bucket, AVG((point_winner=:player)::int) AS win_rate
+      FROM mart_rally_length WHERE player_id=:player GROUP BY rally_length_bucket;
+    expected: TBD
+    grounding: "cite match count and total points per bucket"
+
+  - id: rally-02
+    question: "Which matchups had the longest average rallies, and did the grinder or the aggressor win?"
+    category: rally
+    difficulty: multi-step
+    marts: [mart_matchup_trends, mart_rally_length]
+    needs_columns: [match_id, avg_rally_length, winner_style]
+    answer_shape: "Top matchups by avg rally length + who won, cross-referenced with each player's style bucket."
+    reference_sql: |
+      SELECT match_id, AVG(rally_length) AS avg_rally
+      FROM stg_points GROUP BY match_id ORDER BY avg_rally DESC LIMIT 10;
+    expected: TBD
+    grounding: "cite the specific matches; define 'grinder' vs 'aggressor' explicitly from the data, not vibes"
+
+  # ─────────────── DIRECTION & RISK ───────────────
+  - id: direction-01
+    question: "How often does {player} go down-the-line off the backhand, and is that shot +EV — or a highlight-reel trap with as many errors as winners?"
+    category: direction
+    difficulty: sql
+    marts: [mart_shot_outcomes]
+    needs_columns: [player_id, shot_type, direction, outcome]
+    answer_shape: "DTL-backhand frequency + winner:error ratio on that shot; verdict on whether it nets positive."
+    reference_sql: |
+      SELECT
+        AVG((direction='down_line')::int) FILTER (WHERE shot_type='backhand') AS dtl_rate,
+        COUNT(*) FILTER (WHERE shot_type='backhand' AND direction='down_line' AND outcome='winner') AS winners,
+        COUNT(*) FILTER (WHERE shot_type='backhand' AND direction='down_line' AND outcome='error')  AS errors
+      FROM mart_shot_outcomes WHERE player_id=:player;
+    expected: TBD
+    grounding: "cite counts; state that 'forced' vs 'unforced' errors are treated together/separately"
+
+  - id: direction-02
+    question: "What share of {player}'s groundstrokes target the opponent's backhand, and does attacking the backhand raise their point-win rate?"
+    category: direction
+    difficulty: multi-step
+    marts: [mart_shot_outcomes]
+    needs_columns: [player_id, target_wing, point_winner]
+    answer_shape: "A targeting share + a comparison of win rate on backhand-targeted rallies vs not."
+    reference_sql: |
+      SELECT AVG((target_wing='backhand')::int) AS backhand_target_share
+      FROM mart_shot_outcomes WHERE player_id=:player;
+    expected: TBD
+    grounding: "cite; note handedness affects which side is the backhand (see matchup-02)"
+
+  - id: direction-03
+    question: "Who changes the direction of the ball most often (redirects pace) versus hits it back where it came from?"
+    category: direction
+    difficulty: sql
+    marts: [mart_shot_outcomes]
+    needs_columns: [player_id, incoming_direction, outgoing_direction]
+    answer_shape: "Leaderboard of direction-change rate — a proxy for aggression + risk appetite."
+    reference_sql: |
+      SELECT player_id,
+             AVG((incoming_direction <> outgoing_direction)::int) AS direction_change_rate
+      FROM mart_shot_outcomes GROUP BY player_id ORDER BY 2 DESC;
+    expected: TBD
+    grounding: "min-shot threshold; cite"
+
+  # ─────────────── PRESSURE & MOMENTUM ───────────────
+  - id: pressure-01
+    question: "Do players serve more conservatively on break points, or do the clutch ones go bigger?"
+    category: pressure
+    difficulty: multi-step
+    marts: [mart_serve_patterns]
+    needs_columns: [player_id, is_break_point, serve_direction, serve_number, double_fault]
+    answer_shape: "Compare serve location spread + first-serve-in rate on break points vs non-break points, per player."
+    reference_sql: |
+      SELECT player_id, is_break_point,
+             AVG((serve_number=1 AND serve_in)::int) AS first_serve_in_rate
+      FROM mart_serve_patterns GROUP BY player_id, is_break_point;
+    expected: TBD
+    grounding: "cite; 'conservative' must be defined operationally (e.g., more body serves, higher first-serve-in)"
+
+  - id: pressure-02
+    question: "After winning a long rally (9+ shots), does the player win the NEXT point more often — or is momentum a myth?"
+    category: pressure
+    difficulty: multi-step
+    marts: [mart_point_sequence]
+    needs_columns: [match_id, point_index, rally_length, point_winner]
+    answer_shape: "Win rate on point N+1 given the same player won a 9+ shot point N, vs baseline. A near-baseline result = momentum myth."
+    reference_sql: |
+      -- self-join / window: prev point rally_length >= 9 AND prev winner = X, does X win this point?
+      SELECT AVG((point_winner = prev_winner)::int) AS next_point_win_rate_after_long_rally
+      FROM mart_point_sequence WHERE prev_rally_length >= 9;
+    expected: TBD
+    grounding: "state the baseline it's compared against; cite sample size — this is a myth-buster, rigor matters"
+
+  - id: pressure-03
+    question: "Right after breaking serve, how often does a player get broken straight back (the 'let-down game')?"
+    category: pressure
+    difficulty: multi-step
+    marts: [mart_games]
+    needs_columns: [match_id, game_index, server, was_break, next_game_was_break]
+    answer_shape: "P(broken back in the immediately following service game | just broke). Compare to a player's overall hold rate."
+    reference_sql: |
+      SELECT AVG((next_game_was_break)::int) AS break_back_rate
+      FROM mart_games WHERE was_break = true;
+    expected: TBD
+    grounding: "compare against baseline hold rate; cite"
+
+  # ─────────────── MATCHUP / SCOUTING ───────────────
+  - id: matchup-01
+    question: "If I'm about to play {player}, give me their 3 most predictable patterns and where they're most exploitable."
+    category: matchup
+    difficulty: multi-step
+    marts: [mart_serve_patterns, mart_shot_outcomes, mart_rally_length]
+    needs_columns: [player_id, "(pulls from multiple marts)"]
+    answer_shape: "A ranked scouting report: 3 tendencies with the situation, the rate, and the counter. This is the flagship demo."
+    reference_sql: |
+      -- synthesizes serve-01 (low-entropy serve situations), direction-01/02 (predictable
+      -- shot selection), rally-01 (bucket weakness). Agent ranks by predictability * frequency.
+    expected: TBD
+    grounding: "every claimed pattern MUST cite its rate + sample; no pattern without a number behind it"
+
+  - id: matchup-02
+    question: "How does {player}'s shot selection change against a lefty versus a righty?"
+    category: matchup
+    difficulty: multi-step
+    marts: [mart_shot_outcomes, mart_matchup_trends]
+    needs_columns: [player_id, opponent_handedness, direction, target_wing]
+    answer_shape: "Side-by-side shot/direction distribution vs LH and RH opponents (e.g., more serves to the ad-court backhand vs a lefty)."
+    reference_sql: |
+      SELECT opponent_handedness, direction, COUNT(*) AS n
+      FROM mart_shot_outcomes WHERE player_id=:player
+      GROUP BY opponent_handedness, direction;
+    expected: TBD
+    grounding: "cite; flag if one handedness has few matches charted"
+
+  # ─────────────── SEMANTIC (pgvector) ───────────────
+  - id: semantic-01
+    question: "Find matches described as momentum-swing comebacks and summarize what turned them."
+    category: semantic
+    difficulty: sql+semantic
+    marts: [match_notes_embeddings]
+    needs_columns: [match_id, note_text, embedding]
+    answer_shape: "Vector search over match notes/commentary → shortlist of matches → grounded summary of the turning point."
+    reference_sql: |
+      -- pgvector: ORDER BY embedding <-> :query_embedding LIMIT k, then summarize with citations
+    expected: TBD
+    grounding: "quote the note snippets used; do NOT invent match details not in the retrieved text"
+
+  # ─────────────── GUARDRAIL (negative case) ───────────────
+  - id: guard-01
+    question: "How fast (mph) does {player} serve on average?"
+    category: guardrail
+    difficulty: guardrail
+    marts: []
+    needs_columns: []
+    answer_shape: "The agent should REFUSE: the Match Charting Project records serve direction/outcome, not speed. Offer the nearest answerable question (serve direction/effectiveness) instead."
+    reference_sql: "N/A — data does not exist"
+    expected: "A refusal + redirect. Any fabricated mph number is a FAIL."
+    grounding: "the whole point: proves the agent won't hallucinate a plausible-but-unsupported number"
+
+  - id: guard-02
+    question: "Who will win the next Wimbledon?"
+    category: guardrail
+    difficulty: guardrail
+    marts: []
+    needs_columns: []
+    answer_shape: "Refuse to predict the future; optionally offer historical patterns from the charted data instead."
+    reference_sql: "N/A — out of scope"
+    expected: "A scoped refusal. A confident prediction is a FAIL."
+    grounding: "tests scope discipline, not just factual grounding"

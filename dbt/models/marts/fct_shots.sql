@@ -1,0 +1,112 @@
+{{ config(
+    enabled=false,
+    materialized='table'
+) }}
+
+-- ============================================================================
+--  fct_shots  --  THE FIRST MART.  YOU WRITE THIS ONE.
+--
+--  Flip `enabled=false` to `enabled=true` above once the body is written.
+--  (Disabled so `dbt build` stays green while this is a stub.)
+-- ============================================================================
+--
+--  WHY THIS MODEL IS YOURS
+--
+--  Every other model in this repo is downstream of one decision you make here:
+--  what is one row? Get the grain right and questions 1-13 in questions.yml are
+--  each a GROUP BY. Get it wrong and every mart above it inherits the mistake.
+--
+-- ----------------------------------------------------------------------------
+--  THE GRAIN DECISION
+--
+--  Three defensible answers. They are not equally good for this project.
+--
+--  A) one row per SHOT            (match_id, point_number, shot_number)
+--     + every "where does the ball go" question is a filter, not a subquery
+--     + rally length is COUNT(*), direction entropy is one aggregate
+--     - requires the notation parser (docs/mcp-notation.md) before anything works
+--     - ~500K points x ~4 shots = a few million rows. Fine for Postgres.
+--
+--  B) one row per POINT           (match_id, point_number)
+--     + no parser needed today; stg_points is already at this grain
+--     - "how often does she go down-the-line off the backhand" becomes
+--       string-munging inside every query. You will regret it by question 6.
+--
+--  C) one row per SERVE           (match_id, point_number, serve_number)
+--     + matches questions 1, 2, 9 exactly; only needs the serve code parsed
+--     - a second fact table for rally shots follows immediately
+--
+--  Worth noticing: (A) is the only grain that makes the shot-level data
+--  meaningfully different from a box score -- which is the entire premise of
+--  the project. (C) is the honest smallest-useful-thing. (B) is a trap.
+--
+-- ----------------------------------------------------------------------------
+--  WHAT YOU HAVE TO BUILD FROM
+--
+--    {{ ref('stg_points') }}
+--      match_id, point_number, game_number, point_in_game, point_score,
+--      server_player_num, point_winner_num, is_second_serve_point,
+--      is_tiebreak_set, rally_notation   <-- the shot sequence string
+--
+--    {{ ref('stg_matches') }}
+--      match_id, match_date, tour, surface, best_of,
+--      player_1_name, player_2_name, player_1_hand, player_2_hand
+--      (Player 1 is always whoever served first -- per upstream data_dictionary.txt)
+--
+-- ----------------------------------------------------------------------------
+--  THINGS THAT WILL BITE YOU
+--
+--  1. WHO HIT IT. Shots alternate: odd-numbered shots are the server's, even
+--     are the returner's. Resolve to a real player name, not a 1/2 -- the agent
+--     will be asked about "Alcaraz", not about "player 2".
+--
+--  2. COURT SIDE. Deuce vs ad is not in the data. Derive it from point_in_game
+--     (point 1 of a game is deuce, alternating). Serve direction is meaningless
+--     without it, and question 2 ("wide serve on the DEUCE court") needs it.
+--
+--  3. HANDEDNESS. "Down the line off the backhand" is a different physical shot
+--     for a lefty. Carry the hitter's hand onto every row now, or bolt it on
+--     badly later.
+--
+--  4. UNPARSEABLE POINTS. Some rally strings are truncated or use codes the
+--     parser does not know. Decide explicitly: drop them, or keep the row with
+--     null shot detail and a flag? One of those lets you measure your own
+--     coverage; the other hides it.
+--
+--  5. SURROGATE KEY. {{ "{{ dbt_utils.generate_surrogate_key([...]) }}" }} over
+--     the grain columns, so downstream models have one thing to join on.
+--
+-- ----------------------------------------------------------------------------
+--  WHERE THE PARSER GOES
+--
+--  Decoding the notation string is not this model's job -- it is intermediate
+--  work. Suggested split:
+--
+--    models/intermediate/int_shots_exploded.sql   notation -> one row per shot
+--    models/marts/fct_shots.sql                   + context, names, keys, tests
+--
+--  In Postgres, regexp_matches(..., 'g') with a shot-token pattern plus
+--  WITH ORDINALITY gives you shot_number for free. A Python/Dagster parser is
+--  the other valid answer -- easier to unit-test, harder to keep in the lineage.
+--
+--  Before you trust it: validate against Sackmann's own aggregations.
+--  docs/mcp-notation.md, "How to verify".
+-- ============================================================================
+
+-- TODO(kyle): write it.
+--
+-- with points as (
+--
+--     select * from {{ ref('stg_points') }}
+--
+-- ),
+--
+-- shots as (
+--     -- explode rally_notation -> one row per shot
+-- ),
+--
+-- final as (
+--     -- + hitter, court side, handedness, surrogate key, outcome flags
+-- )
+--
+-- select * from final

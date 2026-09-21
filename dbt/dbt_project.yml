@@ -1,0 +1,25 @@
+name: tennis_analytics
+version: 0.1.0
+config-version: 2
+
+profile: tennis_analytics
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  tennis_analytics:
+    +schema: analytics
+    staging:
+      # Views: cheap, always fresh, and the staging layer does no heavy work.
+      +materialized: view
+    # intermediate/ is empty until the notation parser lands; dbt warns about
+    # config paths with no resources, so its config arrives with its first model.
+    marts:
+      # Tables: marts are what the agent queries at request time, so they get
+      # to be physical and indexable.
+      +materialized: table

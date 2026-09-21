@@ -1,0 +1,80 @@
+# Increment 0 workflow:  make setup && make up && make db-init && make ingest && make demo PLAYER="Carlos Alcaraz"
+
+SHELL := /bin/bash
+DBT   := uv run dbt --profiles-dir dbt --project-dir dbt
+PLAYER ?= Carlos Alcaraz
+
+.DEFAULT_GOAL := help
+
+help:  ## Show this help
+	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
+
+# ---------------------------------------------------------------- setup ----
+
+setup:  ## Create the venv and install deps (pins Python 3.12 -- dbt/dagster do not support 3.13+)
+	uv sync --all-extras
+	@test -f .env || (cp .env.example .env && echo "created .env from .env.example")
+
+up:  ## Start Postgres + pgvector
+	docker compose up -d
+	@until docker compose exec -T postgres pg_isready -U $${POSTGRES_USER:-tennis} >/dev/null 2>&1; do sleep 1; done
+	@echo "postgres ready on port $${POSTGRES_PORT:-5433}"
+
+down:  ## Stop Postgres (keeps the data volume)
+	docker compose down
+
+nuke:  ## Stop Postgres and DELETE the data volume
+	docker compose down -v
+
+psql:  ## Open a psql shell
+	docker compose exec postgres psql -U $${POSTGRES_USER:-tennis} -d $${POSTGRES_DB:-tennis}
+
+# -------------------------------------------------------------- ingest ----
+
+db-init:  ## Apply sql/*.sql (idempotent)
+	uv run tennis init-db
+
+ingest:  ## Load matches + serve-direction stats (fast -- enough for `make demo`)
+	uv run tennis load matches
+	uv run tennis load stats_serve_direction
+
+ingest-points:  ## Load the point-by-point files (large -- several hundred MB)
+	uv run tennis load points
+
+ingest-all: ingest ingest-points  ## Everything
+
+status:  ## Row counts, ingest runs, dead-letter count
+	uv run tennis status
+
+demo:  ## Increment 0 proof-of-life -- make demo PLAYER="Iga Swiatek"
+	uv run tennis demo "$(PLAYER)"
+
+# ----------------------------------------------------------------- dbt ----
+
+dbt-deps:  ## Install dbt packages
+	$(DBT) deps
+
+dbt-build:  ## Run + test every model
+	$(DBT) build
+
+dbt-test:  ## Tests only
+	$(DBT) test
+
+dbt-docs:  ## Generate and serve the data catalog
+	$(DBT) docs generate && $(DBT) docs serve
+
+# ---------------------------------------------------------------- dev -----
+
+lint:  ## Ruff check + format check
+	uv run ruff check .
+	uv run ruff format --check .
+
+fmt:  ## Ruff autofix + format
+	uv run ruff check --fix .
+	uv run ruff format .
+
+test:  ## Python tests
+	uv run pytest -q
+
+.PHONY: help setup up down nuke psql db-init ingest ingest-points ingest-all status demo \
+        dbt-deps dbt-build dbt-test dbt-docs lint fmt test

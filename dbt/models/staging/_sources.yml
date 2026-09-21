@@ -1,0 +1,43 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: >
+      Match Charting Project CSVs landed verbatim by `tennis load`. All columns
+      are TEXT; casting happens in staging. Data (c) Jeff Sackmann,
+      CC BY-NC-SA 4.0 -- see ATTRIBUTION.md.
+
+    # Freshness is measured on the ingest timestamp, not a source event time:
+    # the upstream is a git repo that gets new matches daily, so "how stale is
+    # our copy" is the question that actually matters.
+    loaded_at_field: _loaded_at
+    freshness:
+      warn_after: { count: 7, period: day }
+      error_after: { count: 30, period: day }
+
+    tables:
+      - name: mcp_matches
+        description: One row per charted match.
+        columns:
+          - name: match_id
+            description: "Natural key: {YYYYMMDD}-{M|W}-{tournament}-{round}-{player1}-{player2}."
+            data_tests: [not_null, unique]
+
+      - name: mcp_points
+        description: >
+          One row per point. `first_serve` / `second_serve` hold the shot-by-shot
+          notation string -- the raw material for shot-grain modelling.
+          Codebook: docs/mcp-notation.md.
+        columns:
+          - name: match_id
+            data_tests: [not_null]
+          - name: pt
+            data_tests: [not_null]
+
+      - name: mcp_stats_serve_direction
+        description: Sackmann's per-match serve placement counts (deuce/ad x wide/body/T).
+        freshness: null  # inherits table-level default; kept explicit for the pattern
+        columns:
+          - name: match_id
+            data_tests: [not_null]

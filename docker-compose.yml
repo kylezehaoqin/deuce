@@ -1,0 +1,26 @@
+# One container: Postgres with pgvector preinstalled.
+# pgvector lives inside Postgres so the warehouse and the vector store are the same
+# database -- one fewer moving part, and semantic search can JOIN against the marts.
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: tennis-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tennis}
+      POSTGRES_USER: ${POSTGRES_USER:-tennis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tennis}
+    ports:
+      # 5433 on the host so this never fights a local Postgres on 5432.
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Anything in here runs once, on first boot of an empty volume.
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tennis} -d ${POSTGRES_DB:-tennis}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  pgdata:

@@ -1,0 +1,11 @@
+version: 2
+
+# Every mart column gets a `description:` and at least one test here.
+# The agent reads these descriptions as schema context at query time, so a
+# column documented badly is a column the agent will use badly -- this file is
+# prompt engineering as much as it is documentation.
+#
+# models:
+#   - name: fct_shots
+#     description: One row per shot. Grain: (match_id, point_number, shot_number).
+#     columns: ...

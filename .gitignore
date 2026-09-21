@@ -1,0 +1,39 @@
+# --- private career docs: NEVER commit (this repo is public) ---
+0*.md
+tennis-questions.yml
+career-files-claude/
+
+# --- secrets ---
+.env
+.env.*
+!.env.example
+
+# --- data (re-downloadable from source; keeps the repo small) ---
+data/*
+!data/.gitkeep
+
+# --- python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# --- dbt ---
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+dbt/.user.yml
+
+# --- dagster ---
+.dagster/
+dagster_home/
+tmp*/
+
+# --- os / editor ---
+.DS_Store
+.idea/
+.vscode/
