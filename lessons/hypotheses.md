@@ -143,3 +143,9 @@ being excluded.
 **Verdict: ⚠️ partial — OPEN.** Both directionally right, ~5% unexplained.
 **Methodological error to avoid repeating:** two hypotheses were tested
 simultaneously, so their individual contributions are unknown. → lesson 005.
+
+**Follow-up diagnostic (free, and should have been run first):** of 5,888
+matches, 5,817 over-count and **1** under-counts. One-directional error is the
+signature of a missing exclusion rule, not a mapping error — a wrong mapping
+would scatter both ways. Next round tests H10a in isolation via
+`make investigate FILE=005_shot_direction_scope.sql`.

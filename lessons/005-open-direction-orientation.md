@@ -72,6 +72,33 @@ Gap **159 → 19.5**. Both hypotheses are directionally right, and `fbs` beats
 **Also established:** his `Total` row = `F + B + S` for 23,432 of 23,604
 player-matches, confirming groundstrokes-only scope.
 
+## The harness
+
+The investigation is now a re-runnable measurement loop with one hole in it:
+
+```bash
+make investigate FILE=005_shot_direction_scope.sql
+```
+
+Everything except the hypothesis is fixed — oracle side, join, metrics, per-era
+breakdown. You edit one CTE (`candidate`) and read a number directly comparable
+to the last one. See `sql/investigations/README.md` for why that constraint
+matters.
+
+Baseline it reproduces:
+
+```
+  era  | matches | pct_exact | avg_gap | too_many | too_few
+-------+---------+-----------+---------+----------+---------
+ 2020s |    5888 |      1.19 |   19.55 |     5817 |       1
+```
+
+**Read the last two columns.** 5,817 matches over-count, exactly **one**
+under-counts. The error is entirely one-directional — which is what a *missing
+exclusion rule* looks like. A mapping error or a flaky regex would scatter in
+both directions. That single statistic is strong evidence for H10a and weak
+evidence against H10c, and it cost nothing to compute.
+
 ## What's left
 
 ~19.5 shots per match, about 5% over. Candidate hypotheses, untested:

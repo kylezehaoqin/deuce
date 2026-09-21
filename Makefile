@@ -68,6 +68,12 @@ dbt-test:  ## Tests only
 dbt-docs:  ## Generate and serve the data catalog
 	$(DBT) docs generate && $(DBT) docs serve
 
+# ------------------------------------------------------- investigations ----
+
+investigate:  ## Run an investigation harness -- make investigate FILE=005_shot_direction_scope.sql
+	@docker compose exec -T postgres psql -U $${POSTGRES_USER:-tennis} -d $${POSTGRES_DB:-tennis} \
+		-v ON_ERROR_STOP=1 -f - < sql/investigations/$(FILE)
+
 # ---------------------------------------------------------------- dev -----
 
 lint:  ## Ruff check + format check
@@ -81,5 +87,5 @@ fmt:  ## Ruff autofix + format
 test:  ## Python tests
 	uv run pytest -q
 
-.PHONY: help setup up down nuke psql db-init ingest ingest-points ingest-oracles ingest-all status demo \
+.PHONY: help setup up down nuke psql db-init ingest ingest-points ingest-oracles ingest-all status demo investigate \
         dbt-deps dbt-build dbt-test dbt-docs lint fmt test
