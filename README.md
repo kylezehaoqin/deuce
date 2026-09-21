@@ -109,7 +109,7 @@ That is the shape of every answer this project is built to produce.
 Then the big one, when you want shot-level data:
 
 ```bash
-make ingest-points   # several hundred MB, ~500K+ charted points
+make ingest-points   # 178 MB, ~1.9M charted points, ~60s
 ```
 
 ---

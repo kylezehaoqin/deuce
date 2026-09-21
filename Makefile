@@ -38,7 +38,7 @@ ingest:  ## Load matches + serve-direction stats (fast -- enough for `make demo`
 	uv run tennis load matches
 	uv run tennis load stats_serve_direction
 
-ingest-points:  ## Load the point-by-point files (large -- several hundred MB)
+ingest-points:  ## Load the point-by-point files (178 MB, ~1.9M points, ~60s)
 	uv run tennis load points
 
 ingest-all: ingest ingest-points  ## Everything

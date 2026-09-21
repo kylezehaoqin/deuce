@@ -68,7 +68,11 @@ CREATE INDEX IF NOT EXISTS ix_mcp_points_match ON raw.mcp_points (match_id);
 CREATE TABLE IF NOT EXISTS raw.mcp_stats_serve_direction (
     match_id       TEXT NOT NULL,
     player         TEXT NOT NULL,
-    row_label      TEXT NOT NULL,  -- source header: 'row' -- e.g. 'Total', 'Deuce', '1st', 'BP'
+    -- source header: 'row'. Verified values: 'Total', '1', '2' -- where 1/2 are
+    -- SERVE NUMBER, not set number. Confirmed arithmetically: rows 1+2 sum to
+    -- Total for 23,597 of 23,600 player-matches. There is no pressure/score
+    -- dimension in this file -- that is why the points table exists.
+    row_label      TEXT NOT NULL,
     deuce_wide     TEXT,
     deuce_middle   TEXT,
     deuce_t        TEXT,
