@@ -71,6 +71,13 @@ final as (
             else 'ad'
         end                                        as court_side,
 
+        -- Score as points played, per side. Exposed rather than kept private
+        -- because every pressure definition downstream (break point, game point,
+        -- deuce) is arithmetic on these two numbers -- and a mart that
+        -- re-derives them will eventually re-derive them differently.
+        p.server_points,
+        p.returner_points,
+
         m.match_date,
         m.tour,
         m.surface,
