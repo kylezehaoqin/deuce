@@ -36,8 +36,38 @@ sources:
             data_tests: [not_null]
 
       - name: mcp_stats_serve_direction
-        description: Sackmann's per-match serve placement counts (deuce/ad x wide/body/T).
+        description: >
+          Sackmann's per-match serve placement counts (deuce/ad x wide/body/T).
+          `row_label` is 'Total' | '1' | '2' where 1/2 are SERVE NUMBER, not set
+          number -- verified arithmetically (lessons/003). There is no score or
+          pressure dimension here; that is why the points table exists.
         freshness: null  # inherits table-level default; kept explicit for the pattern
+        columns:
+          - name: match_id
+            data_tests: [not_null]
+
+      # --- oracle sources: consumed only by tests, never by a mart ---
+
+      - name: mcp_stats_rally
+        description: >
+          ORACLE. Sackmann's rally-length buckets. Ground truth for our parser.
+        columns:
+          - name: match_id
+            data_tests: [not_null]
+
+      - name: mcp_stats_shot_types
+        description: >
+          ORACLE. Sackmann's shot-type counts. Ground truth for the letter
+          mapping in docs/mcp-notation.md.
+        columns:
+          - name: match_id
+            data_tests: [not_null]
+
+      - name: mcp_stats_shot_direction
+        description: >
+          ORACLE. Shot directions already resolved into tactical terms
+          (crosscourt / down the line / inside-out / inside-in). Ground truth
+          for the direction-orientation question. Groundstrokes only.
         columns:
           - name: match_id
             data_tests: [not_null]

@@ -41,7 +41,12 @@ ingest:  ## Load matches + serve-direction stats (fast -- enough for `make demo`
 ingest-points:  ## Load the point-by-point files (178 MB, ~1.9M points, ~60s)
 	uv run tennis load points
 
-ingest-all: ingest ingest-points  ## Everything
+ingest-oracles:  ## Load Sackmann's own aggregations (ground truth for our parser)
+	uv run tennis load stats_rally
+	uv run tennis load stats_shot_types
+	uv run tennis load stats_shot_direction
+
+ingest-all: ingest ingest-points ingest-oracles  ## Everything
 
 status:  ## Row counts, ingest runs, dead-letter count
 	uv run tennis status
@@ -76,5 +81,5 @@ fmt:  ## Ruff autofix + format
 test:  ## Python tests
 	uv run pytest -q
 
-.PHONY: help setup up down nuke psql db-init ingest ingest-points ingest-all status demo \
+.PHONY: help setup up down nuke psql db-init ingest ingest-points ingest-oracles ingest-all status demo \
         dbt-deps dbt-build dbt-test dbt-docs lint fmt test

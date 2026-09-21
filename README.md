@@ -106,10 +106,12 @@ court, you cheat left. Across 221 charted matches.
 
 That is the shape of every answer this project is built to produce.
 
-Then the big one, when you want shot-level data:
+Then the shot-level data, and the ground truth to check your parsing against:
 
 ```bash
-make ingest-points   # 178 MB, ~1.9M charted points, ~60s
+make ingest-points    # 178 MB, ~1.9M charted points, ~60s
+make ingest-oracles   # Sackmann's own aggregations -- see 'Design notes'
+make dbt-build        # staging + intermediate models, 20 tests
 ```
 
 ---
@@ -139,7 +141,9 @@ dbt/
   models/intermediate/      business logic, joins, the notation parser
   models/marts/             what the agent queries
 
-docs/mcp-notation.md      the shot-notation codebook + how to verify it
+docs/mcp-notation.md      the shot-notation codebook + measured accuracy
+lessons/                  why the repo is built this way: decisions, trade-offs,
+                          a hypothesis log and an error log
 questions.yml             16 questions: demo script, mart spec, and eval set
 ```
 
@@ -177,11 +181,15 @@ and semantic search results can `JOIN` straight back onto the marts — a hit on
 match note can be enriched with that match's actual numbers in the same query.
 (Qdrant is the swap-in if this ever needed to scale past one box.)
 
-**The parser gets validated against an independent implementation.** Sackmann
-publishes his own aggregations of the same notation strings. Parsing 20 matches and
-diffing against `charting-m-stats-ShotTypes.csv` proves the shot-type mapping;
-diffing against `ShotDirection.csv` proves the orientation. That diff becomes a dbt
-test, not a one-off script. See `docs/mcp-notation.md`.
+**The parser is validated against an independent implementation.** Sackmann
+publishes his own aggregations of the same notation strings, which makes them ground
+truth for our parsing — no labelling required. Rally length currently agrees with
+his numbers on **90.0%** of 2020s matches, 82.5% of 2010s and 55.2% of pre-2010,
+and `dbt build` fails if any tier regresses below its baseline.
+
+That spread is itself the finding: **charting conventions drifted over the project's
+history**, so every parsed row carries a `parse_confidence` column and the agent is
+expected to disclose it rather than compare across eras silently.
 
 ---
 

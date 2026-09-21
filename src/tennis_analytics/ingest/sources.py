@@ -117,4 +117,86 @@ STATS_SERVE_DIRECTION = SourceSpec(
     },
 )
 
-SOURCES: dict[str, SourceSpec] = {s.name: s for s in (MATCHES, POINTS, STATS_SERVE_DIRECTION)}
+# ---------------------------------------------------------------- oracles ---
+# Sackmann's own aggregations of the same notation strings. Ingested through the
+# identical code path as any other source, but consumed only by dbt tests that
+# diff our parse against his. Nothing in a mart should ever read these.
+# See sql/004_raw_stats_oracles.sql and lessons/004-oracle-validation.md.
+
+STATS_RALLY = SourceSpec(
+    name="stats_rally",
+    files=("charting-m-stats-Rally.csv", "charting-w-stats-Rally.csv"),
+    table="raw.mcp_stats_rally",
+    key_columns=("match_id", "row_label"),
+    required=("match_id", "row"),
+    column_map={
+        "match_id": "match_id",
+        "server": "server",
+        "returner": "returner",
+        "row": "row_label",
+        "pts": "pts",
+        "pl1_won": "pl1_won",
+        "pl1_winners": "pl1_winners",
+        "pl1_forced": "pl1_forced",
+        "pl1_unforced": "pl1_unforced",
+        "pl2_won": "pl2_won",
+        "pl2_winners": "pl2_winners",
+        "pl2_forced": "pl2_forced",
+        "pl2_unforced": "pl2_unforced",
+    },
+)
+
+STATS_SHOT_TYPES = SourceSpec(
+    name="stats_shot_types",
+    files=("charting-m-stats-ShotTypes.csv", "charting-w-stats-ShotTypes.csv"),
+    table="raw.mcp_stats_shot_types",
+    key_columns=("match_id", "player", "row_label"),
+    required=("match_id", "player", "row"),
+    column_map={
+        "match_id": "match_id",
+        "player": "player",
+        "row": "row_label",
+        "shots": "shots",
+        "pt_ending": "pt_ending",
+        "winners": "winners",
+        "induced_forced": "induced_forced",
+        "unforced": "unforced",
+        "serve_return": "serve_return",
+        "shots_in_pts_won": "shots_in_pts_won",
+        "shots_in_pts_lost": "shots_in_pts_lost",
+    },
+)
+
+STATS_SHOT_DIRECTION = SourceSpec(
+    name="stats_shot_direction",
+    files=("charting-m-stats-ShotDirection.csv", "charting-w-stats-ShotDirection.csv"),
+    table="raw.mcp_stats_shot_direction",
+    key_columns=("match_id", "player", "row_label"),
+    required=("match_id", "player", "row"),
+    column_map={
+        "match_id": "match_id",
+        "player": "player",
+        "row": "row_label",
+        "crosscourt": "crosscourt",
+        "down_middle": "down_middle",
+        "down_the_line": "down_the_line",
+        "inside_out": "inside_out",
+        "inside_in": "inside_in",
+    },
+)
+
+
+SOURCES: dict[str, SourceSpec] = {
+    s.name: s
+    for s in (
+        MATCHES,
+        POINTS,
+        STATS_SERVE_DIRECTION,
+        STATS_RALLY,
+        STATS_SHOT_TYPES,
+        STATS_SHOT_DIRECTION,
+    )
+}
+
+# Sources whose only purpose is to validate our own parsing.
+ORACLE_SOURCES = frozenset({"stats_rally", "stats_shot_types", "stats_shot_direction"})

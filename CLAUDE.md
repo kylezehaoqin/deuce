@@ -47,6 +47,13 @@ Python is pinned to 3.12 (`.python-version`) — dbt-core and Dagster do not sup
 - Never commit match data or the private career docs (`0*.md`,
   `tennis-questions.yml`) — both are gitignored. This repo is public.
 
+## Lessons folder
+
+`lessons/` documents *why* decisions were made, plus a running hypothesis log and
+error log. **Append to it as work happens** -- a refuted hypothesis or a diagnosed
+error is a first-class artifact here, not noise. Entries follow the template in
+`lessons/README.md` and always include a "saying it out loud" section.
+
 ## Open work
 
 - `dbt/models/marts/fct_shots.sql` — stub, `enabled=false`. Grain decision written

@@ -1,6 +1,9 @@
 # --- private career docs: NEVER commit (this repo is public) ---
-0*.md
-tennis-questions.yml
+# Leading slash = repo root ONLY. Without it, `0*.md` also matched
+# lessons/001-*.md and silently excluded the whole lessons folder. See
+# lessons/errors.md E9.
+/0*.md
+/tennis-questions.yml
 career-files-claude/
 
 # --- secrets ---

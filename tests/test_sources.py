@@ -15,7 +15,9 @@ import pytest
 from tennis_analytics.config import REPO_ROOT
 from tennis_analytics.ingest import SOURCES
 
-DDL = (REPO_ROOT / "sql" / "002_raw_tables.sql").read_text()
+# Read every migration, not just 002 -- new tables arrive in new numbered files,
+# and a check pinned to one file silently stops covering anything added later.
+DDL = "\n".join(p.read_text() for p in sorted((REPO_ROOT / "sql").glob("*.sql")))
 
 
 def _ddl_columns(table: str) -> set[str]:
