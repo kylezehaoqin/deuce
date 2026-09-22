@@ -36,6 +36,7 @@ the part the agent has to reproduce to count as grounded.
 | [T6](#t6) | The serve+1 forehand into the open court is a real pattern | ⬜ untested |
 | [T7](#t7) | The backhand down the line is a highlight-reel trap | ⬜ untested |
 | [T8](#t8) | Breaking serve makes you more likely to get broken back | ⬜ untested |
+| [T9](#t9) | Players can be clustered by play style from shot-mix data | ⚠️ partial — the naive vector is misleading |
 
 ---
 
@@ -215,3 +216,80 @@ deliberately excluded.
 **Confound:** players who just broke are often the weaker server in the matchup
 (that's frequently *why* the break happened), so the baseline has to be that
 player's own hold rate, not the tour's.
+
+## T9
+**Claim:** players can be clustered by play style from shot-mix and direction
+data, well enough that "who plays like Federer" returns a list a coach would
+recognise. (Kyle's idea: use A's results against B's style-neighbours to scout
+A vs B — Djokovic beat Federer this way, Dimitrov plays like Federer, so…)
+
+**Falsifiable if:** the neighbours are implausible, or the clustering collapses
+when an obvious give-away feature is held out.
+
+**Test 1 — can the data see a one-handed backhand?** Proxy: share of
+backhand-side shots that are slices.
+
+```
+ Grigor Dimitrov    | 0.521 | 1HBH        Andy Murray      | 0.235 | 2HBH  <- intruder
+ Roger Federer      | 0.365 | 1HBH        Richard Gasquet  | 0.224 | 1HBH
+ Lorenzo Musetti    | 0.354 | 1HBH        Novak Djokovic   | 0.121 | 2HBH
+ Dominic Thiem      | 0.320 | 1HBH        Jannik Sinner    | 0.059 | 2HBH
+ Stan Wawrinka      | 0.308 | 1HBH        Daniil Medvedev  | 0.059 | 2HBH
+```
+
+Strong separation, with Murray (a slice-heavy two-hander) crossing into
+one-hander territory and Gasquet (a one-hander who drives rather than slices)
+falling below him. **The feature measures style, not grip** — which for this
+purpose is the right thing to measure.
+
+**Test 2 — nearest neighbours to Federer**, 10-feature z-scored vector
+(shot mix, net share, winner/unforced rate, direction distribution), players with
+≥50 charted matches.
+
+First attempt returned **Ana Ivanovic** as the closest player to Federer, with
+Venus Williams and Ekaterina Alexandrova also in the top 12. Cause: the ATP and
+WTA populations were pooled, so both the z-scores and the distances were
+dominated by tour-level differences in shot mix rather than by style.
+
+Restricted to ATP and re-standardised within it:
+
+```
+ Dominic Thiem 2.13 | Ivan Lendl 2.15 | Lorenzo Musetti 2.22 | Tsonga 2.34
+ Tsitsipas 2.50 | Dimitrov 2.50 | Berdych 2.57 | Kuerten 2.65
+```
+
+Plausible — four one-handers plus three flat, aggressive baseliners.
+
+**Test 3 — the holdout.** Remove both slice features and rebuild:
+
+```
+ Ugo Humbert | Nick Kyrgios | Khachanov | Davydenko | Fonseca
+ Musetti(1H) | Alcaraz | Kuerten(1H) | Feliciano Lopez(1H) | Davidovich Fokina
+```
+
+One-handers drop from 5 of 10 to 3 of 10, and what remains is a generic
+"aggressive shot-maker" axis that ignores backhand entirely.
+
+**Verdict: ⚠️ partial.** The signal is real but shallow — the vector was
+substantially reading one give-away feature. Two honest limits:
+
+1. **The data cannot see what Kyle described.** Trajectory, pace and spin are
+   not charted at all, so "flatter forehand" is unavailable. What *is* available:
+   shot mix, direction tendencies, court position, error profile. Style here
+   means "what shots, hit where", not "how they come off the strings".
+2. **Equal feature weighting is a guess.** Dimitrov — the obvious answer, and
+   #1 by slice rate — lands 6th, because slice is 1/10th of the distance. Nobody
+   knows the right weights a priori, which is precisely why this needs an
+   external objective rather than eyeballing the neighbour list.
+
+**The plausibility trap:** the pooled-tour version *looked* fine. Lendl, Thiem,
+Tsonga were all in it; you notice Ivanovic only if you read past the first row.
+A similarity model returns a ranked list whatever you feed it, and a ranked list
+of famous names reads as insight. This is the strongest argument for making the
+evaluation quantitative before trusting any of it.
+
+**Next step if pursued:** retrodiction. Hold out matches; predict something
+measurable about A vs B (serve-direction distribution, rally-length mix, point
+win rate) from A's record against B's k nearest style-neighbours, and check it
+beats two baselines — A's own overall average, and A against randomly chosen
+opponents. If style-neighbours don't beat random, there is no product here.
