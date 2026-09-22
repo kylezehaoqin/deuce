@@ -36,6 +36,9 @@ dbt/.user.yml
 dagster_home/
 tmp*/
 
+# --- tool scratch ---
+.playwright-mcp/
+
 # --- os / editor ---
 .DS_Store
 .idea/

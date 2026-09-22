@@ -103,6 +103,10 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
   from the Instructions tab of `MatchChart 0.3.2.xlsm` (the upstream spec). Don't
   re-derive a code from the data — look it up, then verify the *implementation*
   against an oracle. (errors E10)
+- **Counting questions don't need a parser; identity questions do.** Rally length
+  is one regex and ties a real tokenizer. Anything naming a *specific* shot needs
+  ordered records -- shots alternate, so ordering is the only attribution, and
+  crosscourt/DTL depends on the previous shot. (lesson 009)
 - **Shot direction is OPTIONAL in the spec**, as is return depth. `fbh` is a valid
   rally. Any rate over directions has "shots with a direction charted" as its
   denominator, not "shots". Missingness correlates with charter experience and

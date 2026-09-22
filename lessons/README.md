@@ -21,6 +21,7 @@ interview answer.
 | [006](006-controlling-for-confounds.md) | Is momentum a myth? | Confounds; what a correlation is allowed to mean | settled |
 | [007](007-structure-before-semantics.md) | Field counts before field values | Structural vs. semantic validation | settled |
 | [008](008-forward-only-migrations.md) | Forward-only migrations | Environment drift | settled |
+| [009](009-regex-vs-parser.md) | Regex vs. parser | Tokenization; why grain is forced, not chosen | settled |
 
 Plus two running logs:
 
