@@ -142,6 +142,7 @@ dbt/
   models/marts/             what the agent queries
 
 docs/mcp-notation.md      the shot-notation codebook + measured accuracy
+docs/marts.md             what the warehouse exposes, at what grain, and why
 lessons/                  why the repo is built this way: decisions, trade-offs,
                           a hypothesis log and an error log
 questions.yml             16 questions: demo script, mart spec, and eval set
