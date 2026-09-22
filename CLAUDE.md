@@ -60,8 +60,11 @@ Python is pinned to 3.12 (`.python-version`) — dbt-core and Dagster do not sup
   + one table in a new `sql/00N_*.sql`. `tests/test_sources.py` enforces that the
   two agree, across every migration file.
 - **Oracle sources** (`stats_rally`, `stats_shot_types`, `stats_shot_direction`)
-  are Sackmann's own aggregations. They are ingested like any source but consumed
-  **only by dbt tests** — nothing in a mart may read them.
+  are Sackmann's own aggregations, ingested like any source. The rule is not
+  "no mart may read them" — it is **an oracle may not feed the mart whose parser
+  it validates**. Reading `ShotTypes` for style features is fine until
+  `fct_shots` exists; after that it is circular. Decide per mart and say so in
+  the mart's description. (`docs/marts.md` §6)
 - Column naming: `_at` timestamps, `is_` booleans, `_id` keys, snake_case.
 - Ingest metadata columns are underscore-prefixed (`_run_id`, `_loaded_at`) so they
   never collide with an upstream column name.
@@ -81,6 +84,13 @@ Python is pinned to 3.12 (`.python-version`) — dbt-core and Dagster do not sup
   `lessons/hypotheses-data.md` H10).
 - **Write the prediction before running the query.** The gap between prediction
   and result is the signal; without it a surprising result just looks like a result.
+
+## Mart design
+
+`docs/marts.md` is the map: the grain ladder, every proposed mart with its grain
+and what it unlocks, what is buildable today vs gated on the tokenizer, the build
+order, and the open questions. Update it when a mart lands or an assumption
+changes — a stale map is worse than none.
 
 ## Lessons folder
 
