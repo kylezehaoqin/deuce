@@ -53,12 +53,18 @@ final as (
             else '10+'
         end                                        as rally_bucket,
 
-        -- Serve placement needs no tokenizer at all: it is character one.
-        case left(p.rally_notation, 1)
-            when '4' then 'wide'
-            when '5' then 'body'
-            when '6' then 'T'
-        end                                        as serve_direction,
+        -- Serve placement needs no tokenizer at all -- it is the first character
+        -- (after any lets). Both serves are exposed, not just the one that was
+        -- played, because the FAULTED first serve carries real information:
+        -- where he was aiming, and how he missed.
+        {{ mcp_serve_direction('p.first_serve_notation') }}  as first_serve_direction,
+        {{ mcp_serve_fault_type('p.first_serve_notation') }} as first_serve_fault_type,
+        p.second_serve_notation is null                      as is_first_serve_in,
+        {{ mcp_serve_direction('p.second_serve_notation') }} as second_serve_direction,
+        {{ mcp_serve_fault_type('p.second_serve_notation') }} as second_serve_fault_type,
+
+        -- The serve that was actually played: second if the first faulted.
+        {{ mcp_serve_direction('p.rally_notation') }}        as serve_direction,
 
         -- Deuce vs ad is NOT in the data. Derive it from the score: convert both
         -- sides to points played and take the parity -- even = deuce court.

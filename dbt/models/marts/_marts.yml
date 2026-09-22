@@ -1,11 +1,121 @@
 version: 2
 
-# Every mart column gets a `description:` and at least one test here.
-# The agent reads these descriptions as schema context at query time, so a
-# column documented badly is a column the agent will use badly -- this file is
-# prompt engineering as much as it is documentation.
-#
-# models:
-#   - name: fct_shots
-#     description: One row per shot. Grain: (match_id, point_number, shot_number).
-#     columns: ...
+# Column descriptions are PROMPT CONTEXT -- the agent reads them to write SQL.
+# A column documented badly is a column used badly (lesson 003).
+
+models:
+  - name: fct_serve_points
+    description: >
+      One row per point, from the server's perspective. Both serves are carried
+      side by side, so a faulted first serve is still visible. Grain is POINT,
+      not serve -- use fct_serves for serve-grain questions.
+    columns:
+      - name: serve_point_key
+        description: Surrogate key over (match_id, point_number).
+        data_tests: [not_null, unique]
+      - name: server_name
+        description: >
+          Resolved name of the server. NULL for ~200 points whose match row is
+          missing upstream.
+      - name: returner_hand
+        description: >
+          R or L. Decides which physical corner a direction code names -- the
+          spec defines direction relative to a RIGHT-HANDER's forehand side.
+      - name: first_serve_direction
+        description: "wide | body | T. NULL when the charter recorded no direction (permitted by the spec)."
+      - name: first_serve_fault_type
+        description: "net | wide | deep | wide_and_deep | foot_fault | shank | unknown. NULL if the first serve landed."
+      - name: is_first_serve_in
+        description: True when no second serve was needed.
+      - name: played_serve_direction
+        description: >
+          Direction of the serve actually played -- the first if it landed,
+          otherwise the second. Prefer first_serve_direction or
+          second_serve_direction when the distinction matters.
+      - name: pressure
+        description: >
+          break_point | game_point | deuce | neutral | unknown. Mutually
+          exclusive, derived arithmetically from the score, not from a list of
+          score strings. Break point means the RETURNER can win the game on this
+          point.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['break_point', 'game_point', 'deuce', 'neutral', 'unknown']
+      - name: court_side
+        description: "deuce | ad, derived from score parity. NULL on tiebreak points."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['deuce', 'ad']
+              config:
+                where: "court_side is not null"
+      - name: parse_confidence
+        description: >
+          high (2020s) | medium (2010s) | low (pre-2010). Charting conventions
+          drifted; never compare across tiers without saying so.
+
+  - name: fct_serves
+    description: >
+      One row per serve struck, faults included. A point contributes one row if
+      the first serve landed, two if it faulted. This is the grain every serve
+      question actually has -- first-serve percentage is a filter here, not a
+      ratio of ratios.
+    columns:
+      - name: serve_key
+        description: Surrogate key over (serve_point_key, serve_number).
+        data_tests: [not_null, unique]
+      - name: serve_number
+        description: 1 or 2.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2]
+                quote: false
+      - name: serve_direction
+        description: "wide | body | T. NULL when uncharted -- count() over this column is the honest denominator for any share."
+      - name: landed
+        description: True if the serve went in. False means a fault; two false rows on one point is a double fault.
+      - name: fault_type
+        description: "net | wide | deep | wide_and_deep | foot_fault | shank | unknown. NULL when the serve landed."
+
+  - name: mart_serve_patterns
+    description: >
+      Pre-aggregated serve patterns, one row per (server, court_side, pressure,
+      serve_number, parse_confidence). Shares, denominators and
+      serve_direction_entropy are computed here once so the agent does not
+      recompute them -- entropy in particular is easy to get subtly wrong.
+      Reconciled against fct_serves by assert_serve_patterns_matches_fact.
+      Serves with no resolvable server are excluded.
+    columns:
+      - name: serves
+        description: All serves in this group, including those with no direction charted.
+        data_tests: [not_null]
+      - name: serves_with_direction
+        description: >
+          Serves with a direction charted. THIS is the denominator behind
+          wide_share / body_share / t_share -- not `serves`. Report both when
+          the gap matters.
+      - name: direction_charted_rate
+        description: serves_with_direction / serves. Low values mean the shares rest on a thin subset.
+      - name: serve_direction_entropy
+        description: >
+          -SUM(p*ln p) over wide/body/T, normalised by ln(3) to [0,1]. 1.0 is a
+          perfectly even three-way split (unreadable); 0.0 is every serve to the
+          same spot. NULL when no direction was charted for the group.
+      - name: directions_used
+        description: >
+          How many of the three directions appear at all. An entropy of 0 across
+          one direction means something different from 0 across three.
+      - name: landed_rate
+        description: Share of these serves that went in. On serve_number = 1 this is first-serve percentage.
+      - name: faults
+        description: Serves in this group that missed. Denominator for the faults_* columns.
+      - name: faults_net
+        description: Faults into the net. A high share under pressure suggests decelerating on the swing.
+      - name: faults_deep
+        description: Faults long. A high share suggests over-hitting rather than tightening up.
+      - name: faults_wide
+        description: Faults wide of the box.
+      - name: faults_wide_deep
+        description: Faults both wide and long.

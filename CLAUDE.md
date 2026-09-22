@@ -137,10 +137,10 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
 
 - `dbt/models/marts/fct_shots.sql` — stub, `enabled=false`. Grain decision written
   up in the file header. **Kyle's to write.**
-- `dbt/models/marts/mart_serve_patterns.sql` — stub, `enabled=false`. Context CTE
-  written; the grain decision (fact vs. pre-aggregated) and final SELECT are the
-  TODO. **Kyle's to write.** This is the critical path — the repo has no marts,
-  so Layer 2 has nothing to query, and this one needs no tokenizer.
+- ~~`mart_serve_patterns`~~ — **done.** Kyle chose option C (fact + aggregate):
+  `fct_serve_points` (point grain) → `fct_serves` (serve grain, faults included)
+  → `mart_serve_patterns` (aggregated, entropy precomputed). Drift between the
+  pair is caught by `assert_serve_patterns_matches_fact`.
 - `src/tennis_analytics/agent/prompts.py` — `SYSTEM_PROMPT` is a TODO.
   **Kyle's to write.**
 - **Shot-direction orientation, `lessons/005`** — ~5% scope gap against Sackmann's

@@ -80,7 +80,7 @@ than something the agent has to remember to compute.
 
 ## 3. Buildable today — no tokenizer
 
-### `fct_serves`
+### `fct_serves` — BUILT
 **Grain:** `(match, point, serve_no)` — one row per serve, **including faults**.
 **Why it's new:** `int_point_rally_length` carries `serve_direction` at *point*
 grain, which silently means "the serve that was actually played". On a
@@ -101,9 +101,10 @@ here.
 **Columns:** serve number, direction, landed/faulted, fault type, court side,
 pressure flags, server/returner + handedness, surface, `parse_confidence`.
 
-### `mart_serve_patterns`
-**Grain:** decision pending — see the scaffold at
-`dbt/models/marts/mart_serve_patterns.sql`.
+### `mart_serve_patterns` — BUILT
+**Grain:** `(server, court_side, pressure, serve_number, parse_confidence)`.
+Option C was chosen: fact tables (`fct_serve_points`, `fct_serves`) **and** this
+aggregate, reconciled by `assert_serve_patterns_matches_fact`.
 **Why:** `questions.yml` #1 and #9; reference data for T3/T4/T5.
 **Note:** the fact-vs-aggregate trade-off is written up in the scaffold header.
 Every statistic precomputed here is one the agent cannot get wrong; every column

@@ -43,3 +43,52 @@ case
     else 'low'
 end
 {% endmacro %}
+
+
+{#
+  Serve direction from a serve notation string.
+
+  Spec (docs/mcp-notation.md): optional lets ('c', repeatable), then the
+  direction digit -- 4 out wide, 5 body, 6 down the T, 0 unknown. Identical in
+  both the deuce and ad courts.
+
+  Anchored with leading lets allowed, because `left(notation, 1)` returns 'c' on
+  a let-then-serve string. Rare, but silently wrong.
+
+  Returns NULL when the charter recorded no direction -- which the spec permits,
+  and which 0.2% of faulted serves do ('n' alone means "netted it, didn't see
+  where"). NULL here is data, not a defect.
+#}
+{% macro mcp_serve_direction(notation) %}
+case substring({{ notation }} from '^c*([0456])')
+    when '4' then 'wide'
+    when '5' then 'body'
+    when '6' then 'T'
+end
+{% endmacro %}
+
+
+{#
+  Fault type from a serve notation string, or NULL if the serve landed.
+
+  A fault is the direction followed by an error letter (optionally after '+',
+  the serve-and-volley marker): 4w = wide serve missed wide, 6n = T serve into
+  the net, 5d = body serve long.
+
+  Measured distribution on 333,028 faulted 2020s serves:
+    net 41% | deep 34% | wide 18% | wide+deep 6% | unknown/foot/shank <1%
+
+  Note this reads the FAULT LETTER, not whether a second serve exists. A serve
+  that landed has no fault letter, so this returns NULL for it.
+#}
+{% macro mcp_serve_fault_type(notation) %}
+case substring({{ notation }} from '^c*[0456]\+?([nwdxge!])')
+    when 'n' then 'net'
+    when 'w' then 'wide'
+    when 'd' then 'deep'
+    when 'x' then 'wide_and_deep'
+    when 'g' then 'foot_fault'
+    when '!' then 'shank'
+    when 'e' then 'unknown'
+end
+{% endmacro %}
