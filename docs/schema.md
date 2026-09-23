@@ -25,7 +25,6 @@ Live sizes:
 | `fct_serves` | table | 2,578,594 | 706 MB |
 | `raw.mcp_points` | table | 1,875,004 | 563 MB |
 | `fct_points` | table | 1,874,950 | 500 MB |
-| ~~`fct_serve_points`~~ | **orphan** | 1,875,054 | 474 MB |
 | `raw.mcp_stats_shot_types` | table | 537,695 | 163 MB |
 | `fct_games` | table | 296,286 | 77 MB |
 | `raw.mcp_stats_rally` | table | 151,226 | 46 MB |
@@ -423,95 +422,115 @@ would trade ~500 MB for build time. Not urgent, but it's the kind of thing a
 
 ---
 
-## 6. Indexes — and the gap
+## 6. Indexes
 
-Current state:
+Eight indexes, all created through dbt model config so they survive a rebuild
+(lesson 010):
 
 ```
- dim_players                | ix_dim_players_name_trgm   ← the only mart index
- raw.mcp_points             | mcp_points_pkey, ix_mcp_points_match
- raw.mcp_matches            | mcp_matches_pkey
- raw.mcp_stats_*            | *_pkey
- raw.error_records          | pkey, ix_error_records_run
+ dim_players | ix_dim_players_name_trgm   GIN (player_name gin_trgm_ops)
+ fct_serves  | ix_fct_serves_server_bp    btree (server_name) WHERE is_break_point
+ fct_serves  | <hash>                     btree (server_name)
+ fct_serves  | <hash>                     btree (match_id)
+ fct_points  | <hash>                     btree (server_name)
+ fct_points  | <hash>                     btree (match_id)
+ fct_games   | <hash>                     btree (server_name)
+ fct_games   | <hash>                     btree (match_id)
 ```
 
-**`fct_serves` is 2.58 M rows / 706 MB with no index at all.** Neither is
-`fct_points` (500 MB) or `fct_games` (77 MB). dbt doesn't create indexes unless
-you ask it to.
+Plain indexes get hashed names from dbt's `indexes=[...]` config; the partial
+index is named because it comes from a `post_hook` (that config has no `WHERE`
+clause). `assert_indexes_exist.sql` fails the build if any of them go missing —
+an index is state dbt does not treat as part of the model contract, so
+`materialized='table'` will silently drop a hand-made one.
 
-Here's what that costs on a query the agent will run constantly:
+### The measurement, and why to report buffers not milliseconds
+
+The query the agent runs constantly:
 
 ```sql
-EXPLAIN (ANALYZE, BUFFERS)
 SELECT court_side, serve_direction, count(*)
 FROM fct_serves
 WHERE server_name = 'Carlos Alcaraz' AND serve_number = 1 AND is_break_point
 GROUP BY 1,2;
 ```
 
+| | Buffers | Cold | Warm |
+|---|---:|---:|---:|
+| No index (parallel seq scan) | 90,482 | 1,600 ms | 384 ms |
+| Partial index (bitmap scan) | **1,010** | 518 ms | **2.2 ms** |
+
+**89× fewer buffers. And note the two time columns.** The same un-indexed query
+measured 1,600 ms on a cold cache and 384 ms on a warm one — identical plan,
+identical work, 4× apart on wall time. That difference is `shared_buffers` state,
+nothing else.
+
+So when you report an index win, **report buffer counts.** Buffers are the work
+the query actually did; milliseconds are that work multiplied by how lucky you
+were with the cache. Wall time is fine for "is this fast enough for a user" and
+useless for "did my index help."
+
+The plan after indexing:
+
 ```
- Finalize GroupAggregate (actual time=1597.115..1600.209 rows=7)
-   Workers Planned: 2  ·  Workers Launched: 2
-   Buffers: shared hit=2701 read=87781
+ HashAggregate (rows=7)
+   ->  Bitmap Heap Scan on fct_serves (rows=1206)
+         Filter: (serve_number = 1)
+         Rows Removed by Filter: 457
+         Heap Blocks: exact=1006
+         ->  Bitmap Index Scan on ix_fct_serves_server_bp (rows=1663)
+               Index Cond: (server_name = 'Carlos Alcaraz')
+               Buffers: shared read=4
 ```
 
-**1.6 seconds and 90,482 buffer reads to return 7 rows.** The planner had no
-access path, so it parallel-sequential-scanned the entire table. Doc 08's minimum
-bar is "primary keys indexed"; the strong bar is "no full seq scans on large
-tables." We're below the minimum.
+Two things to read out of it:
 
-### What to add, and the reasoning
+- **The index costs 4 buffers; the heap costs 1,006.** Finding the rows is
+  essentially free — *fetching* them is the whole cost. 1,663 rows scattered
+  across 1,006 blocks is ~1.6 rows per block, so almost every block fetch yields
+  almost nothing. A covering index (`INCLUDE (court_side, serve_direction)`) or
+  physically clustering the table would attack that; neither is worth it at 2 ms.
+- **`serve_number = 1` is filtered at the heap, not the index**, discarding 457 of
+  1,663 rows after fetching them. Adding it to the index would avoid those
+  fetches. Marginal here, but it's how you'd read the plan to decide.
 
-```sql
--- B-tree, leftmost-prefix ordered by selectivity
-CREATE INDEX ON fct_serves (server_name, serve_number, court_side);
-CREATE INDEX ON fct_serves (match_id);
-CREATE UNIQUE INDEX ON fct_serves (serve_key);
-```
-
-**Index type matters, and this schema needs three different kinds:**
+### Why each index type
 
 | Type | Good for | Used here |
 |---|---|---|
-| **B-tree** | `=`, `<`, `BETWEEN`, `ORDER BY`, prefix `LIKE 'abc%'` | `server_name`, `match_id`, keys |
-| **GIN + `gin_trgm_ops`** | `LIKE '%alcar%'`, similarity | `dim_players.player_name` ✓ |
-| **Partial** | a predicate on a small subset | `WHERE is_break_point` |
+| **B-tree** | `=`, `<`, `BETWEEN`, `ORDER BY`, prefix `LIKE 'abc%'` | `server_name`, `match_id` |
+| **GIN + `gin_trgm_ops`** | `LIKE '%alcar%'`, similarity | `dim_players.player_name` |
+| **Partial** | a predicate over a small subset | `WHERE is_break_point` |
 
-Why `dim_players` already has the trigram index and not a B-tree: a B-tree on
-`player_name` cannot serve `WHERE player_name ILIKE '%alcar%'`, because a B-tree
-indexes whole values in sort order and an unanchored pattern has no prefix to
-seek to. GIN indexes the *trigrams* (`alc`, `lca`, `car`…) so a substring becomes
-a containment lookup. That's the right choice for agent name resolution.
+`dim_players` needs GIN rather than B-tree because a B-tree stores whole values
+in sort order, so an unanchored pattern has no prefix to seek to. GIN indexes the
+trigrams (`alc`, `lca`, `car`), turning substring match into containment — which
+is what agent name resolution needs.
 
-**Leftmost-prefix rule:** an index on `(server_name, serve_number, court_side)`
-serves filters on `server_name`, or `server_name + serve_number`, or all three —
-but **not** `serve_number` alone. Column order is part of the design.
+**Leftmost-prefix rule:** an index on `(a, b, c)` serves filters on `a`, `a+b`, or
+all three — never `b` alone. Column order is part of the design.
 
-**Why not index `is_break_point` by itself:** ~10% of rows are break points. A
-plain B-tree on a low-cardinality column loses to a seq scan, because the planner
-would do ~250k random heap fetches instead of a sequential read. A *partial*
-index (`WHERE is_break_point`) is different — it's small, and it acts as a
-pre-filtered subset.
+**Partial beats plain on a low-selectivity boolean.** Indexing `is_break_point`
+alone would lose to a seq scan (~10% of rows means ~250k random heap fetches). A
+partial index is a different object: small, pre-filtered, and it's the one the
+planner picked above. Measured, not reasoned — see `lessons/errors.md` E12.
 
----
+## 7. Findings — both resolved
 
-## 7. Findings
+**`fct_serve_points` orphan — dropped.** 1,875,054 rows / 474 MB left behind when
+the model was renamed to `fct_points`. dbt creates the new relation and does not
+drop the old one; it has no record they're related, so `dbt build` stayed green
+while a stale copy sat there diverging. **Renaming a model leaves a tombstone.**
 
-**`fct_serve_points` is an orphan.** 1,875,054 rows, **474 MB**. The model was
-renamed to `fct_points` in `2909558`; dbt creates the new relation and **does not
-drop the old one** — it has no record that the two are related. `dbt build` will
-keep succeeding while the stale copy sits there diverging silently.
+**Missing indexes — fixed, via model config.** The important part is *how*: not
+hand-written DDL. `materialized='table'` drops and recreates the relation on every
+build, so a manual `CREATE INDEX` disappears at the next `dbt build` without a
+word. Indexes go in the model's `indexes=[...]` config (or a `post_hook` for
+partial ones), and `assert_indexes_exist.sql` asserts they're still there.
 
-This is a general dbt gotcha worth internalising: renaming a model leaves a
-tombstone. `dbt run-operation` with a cleanup macro, or a manual `DROP TABLE`,
-is the fix. Also `docs/marts.md:111` still names `fct_serve_points` and needs
-updating.
-
-**No indexes on any fact or mart table.** See §6. Every agent query is a full
-scan today. Adding three indexes to `fct_serves` is a `post_hook` in the model
-config — a handful of lines.
-
----
+Full write-up: `lessons/010`, with the class of mistake in `lessons/errors.md`
+E11 (index lost to a rebuild) and E12 (selectivity reasoned about instead of
+measured).
 
 ## 8. Reference — grain statements
 
