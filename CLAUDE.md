@@ -41,6 +41,9 @@ Good scaffold examples to imitate: `dbt/models/marts/fct_shots.sql`,
     make demo PLAYER="…"   Increment 0 proof-of-life query
     make dbt-build         run + test all dbt models
     make investigate FILE=…  run a measurement harness from sql/investigations/
+    make dagster           asset graph + run history at :3000
+    make refresh           materialize the daily job (small sources + dbt)
+    make backfill PARTITION=…  reload ONE points file; `make partitions` lists them
     make lint test         ruff + pytest
 
 Python is pinned to 3.12 (`.python-version`) — dbt-core and Dagster do not support
@@ -94,6 +97,26 @@ Python is pinned to 3.12 (`.python-version`) — dbt-core and Dagster do not sup
   back, not how much work it is. A partial index on a ~10% boolean beat a plain
   index on a 0.9%-selective column by 150x here, because heap fetches dominate.
   (errors E12)
+
+## Orchestration
+
+`src/tennis_analytics/orchestration/` holds the Dagster layer: one asset per
+ingest source, dbt models as assets via `dagster-dbt`, a stopped-by-default daily
+schedule, and a volume-anomaly asset check per source. 20 assets, 38 checks.
+
+**The seam is fragile by nature and guarded by tests.** The graph joins up only
+because the asset key we derive (`raw/<table>`) equals the key dagster-dbt derives
+for the matching dbt source. If that drifts, dbt models become graph roots, every
+staleness signal silently lies, and `dbt build` still passes. See
+`tests/test_orchestration.py`.
+
+**Never put `from __future__ import annotations` in a module defining an asset
+that takes `context`.** PEP 563 stringifies the annotation and Dagster inspects it
+at runtime, producing an error that names the exact type you used. (errors E13)
+
+Only the points source is partitioned -- by filename, because the six era files
+are the real unit of independent reload. A partition key that is a fake date would
+give the same UI affordance while reprocessing everything.
 
 ## Schema
 
@@ -179,8 +202,12 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
   `fct_points` (point grain) → `fct_serves` (serve grain, faults included)
   → `mart_serve_patterns` (aggregated, entropy precomputed). Drift between the
   pair is caught by `assert_serve_patterns_matches_fact`.
+- ~~`dim_charters`, `mart_data_coverage`, Dagster~~ — **done.** Increment 1 closes:
+  `dbt build` green and the Dagster UI shows the asset graph.
 - `src/tennis_analytics/agent/prompts.py` — `SYSTEM_PROMPT` is a TODO.
-  **Kyle's to write.**
+  **Kyle's to write.** Now unblocked: `fct_serves`, `mart_serve_patterns` and
+  `mart_data_coverage` all exist, so there is something to route to and a
+  coverage table to ground refusals in.
 - **Shot-direction orientation, `lessons/005`** — ~5% scope gap against Sackmann's
   counts. Harness ready: `make investigate FILE=005_shot_direction_scope.sql`.
   Next step is isolating H10a. Baseline: 1.19% exact, +19.55 avg gap, and the

@@ -22,6 +22,7 @@ recurs.
 | [E10](#e10) | Reverse-engineered a spec that was already written | research order | Look for the spec before deriving it |
 | [E11](#e11) | Renaming a dbt model left a 474 MB orphan | tool boundaries | A declarative tool only owns what you still declare |
 | [E12](#e12) | Guessed which column to index; wrong by 150x | performance intuition | Heap fetches cost, not lookup selectivity |
+| [E13](#e13) | `from __future__ import annotations` broke Dagster | runtime introspection | A stringified annotation is invisible to code that reads types at runtime |
 
 ---
 
@@ -263,3 +264,35 @@ is an excellent index *predicate*.
 running it, so the refutation was unambiguous and cost one query. That is the
 whole value of writing the prediction down (CLAUDE.md, verification discipline).
 Without it this would have been a vague sense that the numbers were fine.
+
+## E13
+```
+DagsterInvalidDefinitionError: Cannot annotate `context` parameter with type
+AssetExecutionContext. `context` must be annotated with AssetExecutionContext,
+AssetCheckExecutionContext, OpExecutionContext, or left blank.
+```
+**Where:** first load of the Dagster definitions.
+
+**Why it's maddening:** the parameter *was* annotated `AssetExecutionContext` —
+the error names the exact type I had used and told me to use it.
+
+**Cause:** `from __future__ import annotations` at the top of the module. PEP 563
+makes every annotation a **string** rather than the object, evaluated lazily or
+never. Dagster inspects `context`'s annotation at decoration time to decide what
+to pass, sees the string `"AssetExecutionContext"`, finds it in none of the
+accepted classes, and reports the mismatch using the text it read — which is
+identical to the correct answer.
+
+**Fix:** drop the future import from any module defining an asset that takes a
+context. Both files now carry a comment saying why, because the natural instinct
+on seeing a bare module without it is to "tidy up" and add it back.
+
+**Rule:** `from __future__ import annotations` is safe for type checkers and
+unsafe for **anything that reads annotations at runtime.** That includes Dagster's
+op/asset decorators and, historically, some Pydantic and FastAPI patterns. The
+tell is an error message that quotes your annotation back at you as a string.
+
+This is the same class as E11: a tool inspecting state you assumed was declarative
+and inert. E11 was dbt not owning an index; this is Dagster reading a type hint as
+data. **Whenever a framework derives behaviour from your source text rather than
+your values, the text's representation becomes part of the contract.**

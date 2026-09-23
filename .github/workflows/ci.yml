@@ -51,6 +51,13 @@ jobs:
       - name: Apply schema
         run: uv run tennis init-db
 
+      # Loading the Definitions catches the whole class of orchestration errors
+      # that `dbt build` cannot: a broken asset key, a stringified context
+      # annotation, a missing resource. Cheap, and it runs before anything else
+      # would notice.
+      - name: Dagster definitions validate
+        run: uv run dagster definitions validate
+
       - name: dbt parse + compile
         run: |
           uv run dbt deps --profiles-dir dbt --project-dir dbt

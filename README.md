@@ -17,7 +17,7 @@ that he goes to the body on break point and that it is readable. That gap — be
 | Increment | Ships | State |
 |---|---|---|
 | **0** | Repo, Postgres ingest, one real question answered end-to-end | 🟢 in progress |
-| **1** | dbt spine (staging → intermediate → marts) + Dagster + tests | ⚪ next |
+| **1** | dbt spine (staging → intermediate → marts) + Dagster + tests | 🟢 done |
 | **2** | LangGraph text-to-SQL agent; every answer cites its source rows | ⚪ |
 | **3** | Eval harness (measured accuracy) + pgvector semantic search + Langfuse tracing | ⚪ |
 | **4** | MCP server exposing the analytics as tools | ⚪ |
@@ -111,7 +111,8 @@ Then the shot-level data, and the ground truth to check your parsing against:
 ```bash
 make ingest-points    # 178 MB, ~1.9M charted points, ~60s
 make ingest-oracles   # Sackmann's own aggregations -- see 'Design notes'
-make dbt-build        # staging + intermediate models, 20 tests
+make dbt-build        # staging + intermediate + marts, 56 tests
+make dagster          # asset graph + run history at localhost:3000
 ```
 
 ---

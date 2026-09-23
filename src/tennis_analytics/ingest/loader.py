@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import csv
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -67,7 +68,11 @@ class LoadResult:
 # ---------------------------------------------------------------- download ---
 
 
-def download(spec: SourceSpec, force: bool = False) -> list[Path]:
+def download(
+    spec: SourceSpec,
+    force: bool = False,
+    files: Sequence[str] | None = None,
+) -> list[Path]:
     """Fetch this source's CSVs into `data/raw/`, streaming to disk.
 
     Skips files already present unless `force`. The points files are hundreds of
@@ -78,7 +83,12 @@ def download(spec: SourceSpec, force: bool = False) -> list[Path]:
     dest_dir.mkdir(parents=True, exist_ok=True)
     paths: list[Path] = []
 
-    for filename in spec.files:
+    wanted = tuple(files) if files else spec.files
+    unknown = set(wanted) - set(spec.files)
+    if unknown:
+        raise ValueError(f"{spec.name}: not files of this source: {sorted(unknown)}")
+
+    for filename in wanted:
         dest = dest_dir / filename
         if dest.exists() and not force:
             log.info("download.skip", file=filename, size=dest.stat().st_size)
@@ -109,10 +119,16 @@ def load(
     validate: bool = True,
     reject_threshold: float = DEFAULT_REJECT_THRESHOLD,
     limit: int | None = None,
+    files: Sequence[str] | None = None,
 ) -> list[LoadResult]:
-    """Load every file for `spec`, one transaction per file."""
+    """Load files for `spec`, one transaction per file.
+
+    `files` restricts the load to named files of this source. That is what makes
+    a Dagster partition meaningful: the six point files are independently
+    reloadable units, so a backfill can target one era without touching the rest.
+    """
     results = []
-    for path in download(spec):
+    for path in download(spec, files=files):
         results.append(
             _load_file(
                 spec, path, validate=validate, reject_threshold=reject_threshold, limit=limit

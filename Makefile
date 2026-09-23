@@ -68,6 +68,30 @@ dbt-test:  ## Tests only
 dbt-docs:  ## Generate and serve the data catalog
 	$(DBT) docs generate && $(DBT) docs serve
 
+# ------------------------------------------------------ orchestration ------
+
+DAGSTER_HOME ?= $(PWD)/.dagster
+
+dagster:  ## Start the Dagster UI at :3000 (asset graph, run history, backfills)
+	@mkdir -p $(DAGSTER_HOME)
+	DAGSTER_HOME=$(DAGSTER_HOME) uv run dagster dev
+
+dagster-validate:  ## Load the definitions without running anything (CI gate)
+	uv run dagster definitions validate
+
+refresh:  ## Materialize the daily job: small sources + full dbt rebuild
+	@mkdir -p $(DAGSTER_HOME)
+	DAGSTER_HOME=$(DAGSTER_HOME) uv run dagster job execute -j daily_refresh -m tennis_analytics.orchestration
+
+backfill:  ## Reload ONE points file -- make backfill PARTITION=charting-m-points-2020s.csv
+	@test -n "$(PARTITION)" || (echo "set PARTITION=<filename>; see: make partitions"; exit 1)
+	@mkdir -p $(DAGSTER_HOME)
+	DAGSTER_HOME=$(DAGSTER_HOME) uv run dagster asset materialize \
+		--select 'raw/mcp_points' --partition '$(PARTITION)' -m tennis_analytics.orchestration
+
+partitions:  ## List the valid PARTITION values for `make backfill`
+	@uv run python -c "from tennis_analytics.ingest import SOURCES; [print(' ', f) for f in SOURCES['points'].files]"
+
 # ------------------------------------------------------- investigations ----
 
 investigate:  ## Run an investigation harness -- make investigate FILE=005_shot_direction_scope.sql
@@ -87,5 +111,5 @@ fmt:  ## Ruff autofix + format
 test:  ## Python tests
 	uv run pytest -q
 
-.PHONY: help setup up down nuke psql db-init ingest ingest-points ingest-oracles ingest-all status demo investigate \
+.PHONY: help setup up down nuke psql db-init ingest ingest-points ingest-oracles ingest-all status demo investigate dagster dagster-validate refresh backfill partitions \
         dbt-deps dbt-build dbt-test dbt-docs lint fmt test
