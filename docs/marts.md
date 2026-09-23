@@ -68,7 +68,8 @@ across 18 charters with ≥20 matches in the 2020s:
 A player charted mostly by a 62% charter has systematically thinner direction
 data than one charted by a 90% charter. **Every direction-based rate inherits
 this**, and nothing currently models it.
-**Status:** buildable. Feeds `mart_data_coverage`.
+**Status:** **BUILT.** 196 charters; direction coverage runs 0.000 to 0.930.
+Feeds `mart_data_coverage`.
 
 ### `mart_data_coverage`
 **Grain:** `(player, surface, year)`.
@@ -79,7 +80,11 @@ did the work.
 whether it can. `questions.yml` repeatedly says *"if N < 20 say the sample is
 thin"* — that's only enforceable if the sample size is a queryable fact rather
 than something the agent has to remember to compute.
-**Status:** buildable. The single highest-leverage mart for grounding.
+**Status:** **BUILT**, at four grains via `GROUPING SETS`
+(player / player_surface / player_season / player_surface_season, 19,569 rows) so
+the agent never re-aggregates a rate. Already earned its keep: it revealed that
+Alcaraz's direction coverage fell 0.943 → 0.797 across his career, confounding a
+longitudinal finding (T10).
 
 ---
 

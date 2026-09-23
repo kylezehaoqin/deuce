@@ -37,6 +37,7 @@ the part the agent has to reproduce to count as grounded.
 | [T7](#t7) | The backhand down the line is a highlight-reel trap | ⬜ untested |
 | [T8](#t8) | Breaking serve makes you more likely to get broken back | ⬜ untested |
 | [T9](#t9) | Players can be clustered by play style from shot-mix data | ⚠️ partial — the naive vector is misleading |
+| [T10](#t10) | Alcaraz's direction tendencies changed over his career | ⚠️ confounded by charter drift — do not report yet |
 
 ---
 
@@ -293,3 +294,50 @@ measurable about A vs B (serve-direction distribution, rally-length mix, point
 win rate) from A's record against B's k nearest style-neighbours, and check it
 beats two baselines — A's own overall average, and A against randomly chosen
 opponents. If style-neighbours don't beat random, there is no product here.
+
+## T10
+**Claim:** Alcaraz's shot-direction tendencies changed measurably over his career
+— notably inside-out forehands falling from 17.6% to 12.2% of directed shots.
+
+**Falsifiable if:** the trend disappears once surface is held constant, or once
+data-collection changes are accounted for.
+
+**Test 1 — surface control.** Restricting to hard courts, four of six apparent
+trends survived (slice up, inside-out down, net rate up, winner rate up) and two
+dissolved (forehand share, unforced error rate). Those two were surface mix, not
+the player.
+
+**Test 2 — the confound I didn't think of.** `mart_data_coverage` now exposes
+charting coverage per player-season, and it moves in the same window:
+
+```
+ season | matches | dominant_charter | direction_charted_rate
+--------+---------+------------------+------------------------
+   2019 |       2 | Zindaras         |                 0.9427
+   2020 |       3 | Zindaras         |                 0.9007
+   2021 |      14 | BG               |                 0.9003
+   2022 |      38 | Edo              |                 0.8836
+   2023 |      49 | BG               |                 0.8547
+   2024 |      43 | Ludo             |                 0.8466
+   2025 |      59 | Ludo             |                 0.7965
+```
+
+**Direction coverage declines monotonically, 0.943 → 0.797**, as `Ludo` (901
+matches at a 0.685 career direction rate) becomes his dominant charter. The
+reported inside-out decline sits inside exactly that window.
+
+**Verdict: ⚠️ confounded — not reportable.** The rate is a share of *charted*
+directions, so a uniform drop in coverage cancels in the denominator and the
+share would be fine. It is only biased if missingness is **non-random with
+respect to direction** — and that is plausible rather than paranoid: a charter
+skipping direction under time pressure skips the fastest shots, and inside-out
+forehands are among the fastest. Untested either way.
+
+**What would settle it:** restrict to matches charted by a single high-coverage
+charter and re-run the trend. If it survives on Zindaras-only or BG-only matches,
+it's the player. If it vanishes, it was the collection process.
+
+**The general lesson**, which outlives the claim: in a crowdsourced dataset, the
+*observation process* has its own time series. Any longitudinal finding needs the
+data-collection trend plotted beside it — otherwise you cannot tell a change in
+the player from a change in who was watching.

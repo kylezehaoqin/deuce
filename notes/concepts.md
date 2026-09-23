@@ -164,6 +164,22 @@ an index is *usable* even when unused.
 **Indexes aren't free.** They're rebuilt whenever the table is, and cost write
 time and storage. Worth it when reads dominate and someone is waiting on them.
 
+**Report buffers, not milliseconds.** Same query, same plan, no index either
+time:
+
+```
+cold cache   1,600 ms      warm cache   384 ms      (both: 90,482 buffers)
+```
+
+A 4x spread from `shared_buffers` state alone. After indexing, the same split is
+518 ms cold and 2.2 ms warm.
+
+Buffers are the work the query actually did and don't move with cache warmth.
+Milliseconds are that work multiplied by how lucky you were. So: buffers answer
+*did my index help*, wall time answers *is this fast enough for a user*. They are
+different questions, and quoting the second at the first is how you end up
+claiming a 4x win you didn't earn.
+
 ---
 
 ## NULL and three-valued logic

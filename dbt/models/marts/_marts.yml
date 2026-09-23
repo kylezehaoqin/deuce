@@ -200,3 +200,109 @@ models:
         description: True if the game reached 40-40 at any point.
       - name: set_number
         description: Which set of the match this game belongs to, starting at 1.
+
+  - name: dim_charters
+    description: >
+      One row per volunteer charter. The dataset is crowdsourced and the charting
+      spec makes shot direction, return depth and court position OPTIONAL, so
+      charters differ systematically in how much detail they record -- direction
+      coverage runs 0.00 to 0.93 across 196 charters. Every direction-based rate
+      in the warehouse inherits that. NOT a quality ranking: the spec explicitly
+      tells beginners to skip direction, so these rates describe depth of detail,
+      not care.
+    columns:
+      - name: charter_name
+        description: >
+          `charted_by` as recorded upstream. '(unattributed)' where blank,
+          though in practice every match currently carries a charter.
+        data_tests: [not_null, unique]
+      - name: matches_charted
+        description: Distinct matches this charter recorded.
+        data_tests: [not_null]
+      - name: points_charted
+        description: Points across those matches. The denominator for every rate below.
+      - name: direction_charted_rate
+        description: >
+          Share of this charter's points where at least one shot carries a
+          direction digit. Median is ~0.87; the useful outliers are high-volume
+          charters well below it, whose matches dilute any direction metric.
+      - name: return_depth_charted_rate
+        description: >
+          Share with a service-return depth digit (7/8/9). Return depth only ever
+          applies to service returns, never to groundstrokes.
+      - name: court_position_charted_rate
+        description: >
+          Share with an approach / at-net / net-cord / stop-volley modifier. The
+          spec calls this the lowest-priority layer, so it is the sharpest signal
+          of how thorough a charter is -- it varies fourfold.
+      - name: uncharted_point_rate
+        description: >
+          Share of points recorded as S/R/P/Q -- outcome known, rally not charted.
+      - name: charts_both_tours
+        description: True when this charter has both ATP and WTA matches.
+
+  - name: mart_data_coverage
+    description: >
+      What we know about a player, and how confidently -- the table to consult
+      BEFORE answering, not after. questions.yml repeatedly requires "if N < 20
+      say the sample is thin", which is only enforceable when sample size is a
+      fact that can be looked up rather than a COUNT(*) the agent must remember
+      to write. Emitted at four levels via GROUPING SETS so no re-aggregation is
+      needed: rates cannot be averaged across rows without weighting, and
+      `coverage_grain` says which level a row is. Counts sit beside every rate
+      for consumers that do need to re-aggregate correctly.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [player_name, surface, season, coverage_grain]
+    columns:
+      - name: player_name
+        description: Joins to dim_players.player_name.
+        data_tests: [not_null]
+      - name: coverage_grain
+        description: >
+          Which level this row summarises: player, player_surface, player_season
+          or player_surface_season. Derived from GROUPING(), so a NULL in
+          `surface` or `season` means "all of them", never "unknown".
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['player', 'player_surface', 'player_season', 'player_surface_season']
+      - name: surface
+        description: NULL at the player and player_season grains, meaning all surfaces.
+      - name: season
+        description: Calendar year. NULL at the player and player_surface grains, meaning all years.
+      - name: matches
+        description: Distinct matches. Question 1 of 4 -- is there enough data at all?
+        data_tests: [not_null]
+      - name: opponents_faced
+        description: >
+          Distinct opponents. A high match count against few opponents is a
+          different kind of thin than a low match count.
+      - name: points
+        description: Points the player was involved in. Denominator for the rates below.
+      - name: direction_charted_rate
+        description: >
+          Question 2 of 4 -- is the field I need actually charted? Share of this
+          player's points carrying a shot direction. Any down-the-line or
+          crosscourt rate for this player has THIS as its real denominator.
+      - name: return_depth_charted_rate
+        description: Share carrying service-return depth.
+      - name: court_position_charted_rate
+        description: Share carrying an approach or net-position modifier.
+      - name: high_confidence_rate
+        description: >
+          Question 3 of 4 -- can I trust the parse? Share of points from 2020+,
+          where the shot parser agrees with the source author ~90% of the time
+          versus ~55% pre-2010.
+      - name: charters_involved
+        description: >
+          Question 4 of 4 -- is this one person's view? Distinct charters
+          contributing. A player seen by one low-detail charter has thin
+          direction data for reasons unrelated to the player.
+      - name: dominant_charter
+        description: >
+          Most frequent charter for these matches. Join to dim_charters to see
+          their completeness rates before trusting a direction-based claim.
+      - name: points_uncharted
+        description: Points whose outcome is known but whose rally was not recorded.
