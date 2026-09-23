@@ -1,4 +1,36 @@
-{{ config(materialized='table') }}
+{{ config(
+    materialized='table',
+    indexes=[
+        {'columns': ['server_name']},
+        {'columns': ['match_id']},
+    ],
+    post_hook=[
+        "drop index if exists analytics_analytics.ix_fct_serves_server_bp",
+        "create index ix_fct_serves_server_bp on {{ this }} (server_name) where is_break_point",
+    ]
+) }}
+
+-- ============================================================================
+--  INDEXES -- measured, not guessed.
+--
+--  A typical agent query (one player, first serves, break points) seq-scanned
+--  the whole 706 MB table: 90,482 buffers, 402 rows kept out of 2.58M.
+--
+--    no index                                     384 ms   90,482 buffers
+--    btree (server_name)                          290 ms    3,163 buffers
+--    partial (server_name) where is_break_point   1.9 ms    1,035 buffers
+--
+--  The partial index wins by 200x, and the reason is heap fetches rather than
+--  column selectivity. server_name is the more selective column (0.9% vs 9.2%),
+--  but a plain index on it still pulls all 23,821 of that player's serves into
+--  the heap before filtering. The partial index only CONTAINS break-point rows,
+--  so it touches 1,663. Pre-filtering the index beats narrowing the lookup.
+--
+--  Partial indexes need a post_hook: dbt's `indexes` config has no WHERE
+--  clause. Both kinds are asserted by tests/assert_indexes_exist.sql, because
+--  an index is state dbt does not consider part of the model's contract -- it
+--  can vanish and the build stays green. (lesson 010)
+-- ============================================================================
 
 -- ============================================================================
 --  fct_serves -- TRUE SERVE GRAIN. One row per serve struck, faults included.

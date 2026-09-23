@@ -84,6 +84,16 @@ Python is pinned to 3.12 (`.python-version`) — dbt-core and Dagster do not sup
   `lessons/hypotheses-data.md` H10).
 - **Write the prediction before running the query.** The gap between prediction
   and result is the signal; without it a surprising result just looks like a result.
+- **Indexes are model config, never manual DDL.** `materialized='table'` drops and
+  recreates on every build, so a hand-made index vanishes silently. Plain indexes
+  go in the `indexes=[...]` config; partial indexes need a `post_hook` because
+  that config has no WHERE clause. Both are asserted by
+  `assert_indexes_exist.sql` -- an index is state dbt does not consider part of
+  the model contract. (lesson 010, errors E11)
+- **Measure an index, don't reason about it.** Selectivity says how many rows come
+  back, not how much work it is. A partial index on a ~10% boolean beat a plain
+  index on a 0.9%-selective column by 150x here, because heap fetches dominate.
+  (errors E12)
 
 ## Schema
 
@@ -92,9 +102,10 @@ diagrams for raw and marts, a layer flow diagram, grain statements for every
 table, and the normalisation reasoning (raw breaks 1NF deliberately, marts break
 3NF deliberately). `docs/marts.md` is the *plan*; this is what exists.
 
-Two open findings recorded there: `fct_serve_points` is a 474 MB orphan left by
-a model rename, and no fact or mart table has any index -- a typical agent query
-on `fct_serves` seq-scans 706 MB for 1.6s to return 7 rows.
+Both findings recorded there are now **fixed**: the `fct_serve_points` orphan is
+dropped, and the fact tables are indexed via model config with
+`assert_indexes_exist.sql` asserting they stay that way. The cited agent query
+went from 384 ms / 90,482 buffers to 28 ms / 1,026. (lesson 010)
 
 ## Mart design
 

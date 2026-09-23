@@ -1,5 +1,11 @@
 {{ config(materialized='table') }}
 
+-- NOT INDEXED, deliberately. 29,294 rows in 6.7 MB -- a sequential scan reads
+-- the whole thing in about a millisecond, and the planner would ignore an index
+-- anyway (same reason dim_players' trigram index goes unused at 1,739 rows).
+-- An index here would cost rebuild time and storage to buy nothing. Revisit if
+-- the grain gets finer.
+
 -- ============================================================================
 --  mart_serve_patterns -- PRE-AGGREGATED. The other half of the option-C pair.
 --

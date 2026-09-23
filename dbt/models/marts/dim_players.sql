@@ -1,6 +1,9 @@
 {{ config(
     materialized='table',
-    post_hook="create index if not exists ix_dim_players_name_trgm on {{ this }} using gin (player_name gin_trgm_ops)"
+    post_hook=[
+        "drop index if exists analytics_analytics.ix_dim_players_name_trgm",
+        "create index ix_dim_players_name_trgm on {{ this }} using gin (player_name gin_trgm_ops)",
+    ]
 ) }}
 
 -- ============================================================================

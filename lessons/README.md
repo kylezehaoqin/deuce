@@ -22,6 +22,7 @@ interview answer.
 | [007](007-structure-before-semantics.md) | Field counts before field values | Structural vs. semantic validation | settled |
 | [008](008-forward-only-migrations.md) | Forward-only migrations | Environment drift | settled |
 | [009](009-regex-vs-parser.md) | Regex vs. parser | Tokenization; why grain is forced, not chosen | settled |
+| [010](010-state-your-tool-doesnt-own.md) | State your tool doesn't own | Declarative tools, invisible state, measured indexes | settled |
 
 Plus two running logs:
 

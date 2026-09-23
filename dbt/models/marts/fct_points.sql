@@ -1,4 +1,10 @@
-{{ config(materialized='table') }}
+{{ config(
+    materialized='table',
+    indexes=[
+        {'columns': ['server_name']},
+        {'columns': ['match_id']},
+    ]
+) }}
 
 -- ============================================================================
 --  fct_points -- FACT GRAIN. One row per point, everything resolved.

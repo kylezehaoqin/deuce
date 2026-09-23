@@ -1,4 +1,10 @@
-{{ config(materialized='table') }}
+{{ config(
+    materialized='table',
+    indexes=[
+        {'columns': ['server_name']},
+        {'columns': ['match_id']},
+    ]
+) }}
 
 -- ============================================================================
 --  fct_games -- one row per game. The missing rung on the grain ladder.

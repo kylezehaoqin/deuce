@@ -20,6 +20,8 @@ recurs.
 | [E8](#e8) | Claimed "several hundred MB" | unverified claim | Measure before you document |
 | [E9](#e9) | `.gitignore` swallowed the lessons folder | pattern scope | A leading slash anchors to the repo root |
 | [E10](#e10) | Reverse-engineered a spec that was already written | research order | Look for the spec before deriving it |
+| [E11](#e11) | Renaming a dbt model left a 474 MB orphan | tool boundaries | A declarative tool only owns what you still declare |
+| [E12](#e12) | Guessed which column to index; wrong by 150x | performance intuition | Heap fetches cost, not lookup selectivity |
 
 ---
 
@@ -198,3 +200,66 @@ numbers downstream:
 - **Forced errors need only shot type + `#`** — so they usually carry no
   direction. This is a strong candidate explanation for the open gap in
   `lessons/005`.
+
+## E11
+**Symptom:** `fct_serve_points` — 474 MB, 1,875,054 rows — still in the
+warehouse after the model was renamed to `fct_points`. `dbt build` green.
+Queryable by name. Diverging from the live table on every rebuild.
+
+**Cause:** dbt created the new relation and has no record the two are related.
+A rename is a delete plus a create as far as the project is concerned, and dbt
+never deletes relations it no longer declares.
+
+The same session showed the mirror case: every index on every analytics table
+was missing, including one created by a `post_hook` that had been verified
+working two sessions earlier.
+
+**Fix:** dropped the orphan; moved indexes into model config; added
+`assert_indexes_exist.sql`, verified by dropping an index and watching it fail.
+
+**Root cause of the missing indexes, found by that test:** the `post_hook` used
+`CREATE INDEX IF NOT EXISTS`. During a rebuild dbt keeps the old relation as
+`__dbt_backup` until after post-hooks run, and that backup still holds an index
+of the same name. `IF NOT EXISTS` matches on name *within the schema*, not on
+`(table, name)` — so it found the backup's index, did nothing, and reported
+success. The backup was then dropped, taking the index with it. Drop-then-create
+fixes it; verified across two consecutive full builds.
+
+That makes `IF NOT EXISTS` a **silent no-op guard**, the same class as E4 and E9:
+all three fail by doing nothing while reporting success.
+
+**Rule:** a declarative tool guarantees only what you still declare. Everything
+else — relations you renamed away from, side effects like indexes, anything
+created by a hook — is **state the tool does not know it owns**, and its absence
+or persistence is silent. Every imperative side effect needs its own assertion.
+
+Related: `dbt run-operation` with a cleanup macro, or `--full-refresh` on a
+fresh schema, both handle orphans. Neither helps unless something tells you the
+orphan is there, which is the actual gap.
+
+## E12
+**Symptom:** predicted that indexing the most selective column would fix a slow
+query. It gave 1.3x. The index I had argued *against* gave 200x.
+
+```
+no index                                     384 ms   90,482 buffers
+btree (server_name)        [my pick]         290 ms    3,163 buffers
+partial (server_name) where is_break_point   1.9 ms    1,035 buffers
+```
+
+**Cause:** reasoning from column selectivity alone. `server_name` is 0.9%
+selective and `is_break_point` 9.2%, so the player column looked obviously
+right. But the cost is **heap fetches**, not index lookups: a plain index on
+`server_name` pulls all 23,821 of that player's rows into the heap and then
+filters, while the partial index *contains* only break-point rows and touches
+1,663.
+
+**Rule:** selectivity tells you how many rows the index will hand back, not how
+much work that is. A partial index is a pre-filtered subset rather than a
+pointer list, which is why a ~10% boolean — famously not worth indexing alone —
+is an excellent index *predicate*.
+
+**Meta-rule, which is the reusable half:** I stated the prediction before
+running it, so the refutation was unambiguous and cost one query. That is the
+whole value of writing the prediction down (CLAUDE.md, verification discipline).
+Without it this would have been a vague sense that the numbers were fine.
