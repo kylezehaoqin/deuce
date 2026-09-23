@@ -114,6 +114,20 @@ and what it unlocks, what is buildable today vs gated on the tokenizer, the buil
 order, and the open questions. Update it when a mart lands or an assumption
 changes — a stale map is worse than none.
 
+## Notes (personal reference + writing backlog)
+
+`notes/` is Kyle's, and distinct from `lessons/`: lessons hold what happened *in
+this repo* and why (written for an interviewer); notes hold the **transferable
+concept**, plainly (written for future him). Lesson 010 is "we lost every index
+and here's the story"; `notes/concepts.md` is "how Postgres indexes work".
+
+- `notes/concepts.md` — reference, appended as concepts come up
+- `notes/blog-backlog.md` — post seeds, each with a hook and evidence in hand
+
+When a session produces a genuinely transferable concept or a finding with a
+number attached, offer to append it. **Do not draft blog prose** — the posts are
+his words; these files are raw material only.
+
 ## Lessons folder
 
 `lessons/` documents *why* decisions were made, plus a running hypothesis log and
