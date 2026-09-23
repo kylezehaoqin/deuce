@@ -27,7 +27,8 @@ Append, don't edit — a refuted hypothesis is the most useful entry in the file
 | [H7](#h7) | Parser accuracy is uniform across the dataset | ❌ refuted (big) |
 | [H8](#h8) | Direction digit follows the shot letter immediately | ❌ refuted |
 | [H9](#h9) | `ShotDirection` covers all shots | ❌ refuted |
-| [H10](#h10) | `ShotDirection` excludes serve returns and non-groundstrokes | ⚠️ partial — **open** |
+| [H10](#h10) | `ShotDirection` excludes serve returns and non-groundstrokes | ✅ confirmed |
+| [H11](#h11) | He excludes the point-ending shot, as in rally length | ⚠️ confirmed *only for net unforced errors* |
 
 ---
 
@@ -158,3 +159,33 @@ matches, 5,817 over-count and **1** under-counts. One-directional error is the
 signature of a missing exclusion rule, not a mapping error — a wrong mapping
 would scatter both ways. Next round tests H10a in isolation via
 `make investigate FILE=005_shot_direction_scope.sql`.
+
+## H11
+**Believed:** Sackmann excludes the point-ending shot from `ShotDirection`, the
+same convention as rally length (H6).
+
+**Falsifiable if:** subtracting point-ending shots does not move the gap toward 0.
+
+**Test:** four subtraction rules, each measured against the oracle per match.
+
+```
+ all unforced errors           -19.65   over-corrects 8x
+ net errors, any terminator     -5.21   forced net errors ARE counted
+ + shank / unknown error        +2.32   indistinguishable from net-only
+ net unforced errors only       +2.34   <-- kept
+```
+
+**Verdict: ⚠️ confirmed, but far narrower than stated.** Only unforced errors
+**into the net** are excluded. The physical reading is exact: a ball into the net
+never crossed the opponent's baseline, so it has no direction. Wide and long balls
+did cross it and are counted.
+
+Combined with H10b's let fix, per-match gap went +19.55 → **+2.34, median +1**.
+The remainder is charter idiosyncrasy (−15.48 to +12.14 per-charter mean, within-
+charter sd ≈ 7–8), not a further rule. → lesson 005.
+
+**Method note worth keeping:** the first three rounds guessed at *patterns*. The
+round that worked started from a **diagnostic** — grouping on `left(rally, 1)`,
+which immediately exposed 19,687 rallies beginning with a let that the anchored
+strip was silently skipping. Guessing is bounded by imagination; a frequency
+table is not.

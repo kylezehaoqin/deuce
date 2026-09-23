@@ -181,6 +181,10 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
   denominator, not "shots". Missingness correlates with charter experience and
   era, so it is not random.
 - `7`/`8`/`9` are **service-return depth only**, not general shot depth.
+- **19,687 points in the 2020s start with `c` (a let).** Any regex anchored at
+  `^[0-9]` on a rally string silently matches nothing on those and leaves the whole
+  rally intact. Use `^c*[0-9]`. Generally: when a regex "works", check what it
+  silently declines to match. (lesson 005)
 - 11 rows in the upstream matches files are field-shifted (missing both player-name
   fields). The loader rejects them on field count; they land in
   `raw.error_records`. Re-loading does not delete rows that *became* invalid —
@@ -208,7 +212,10 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
   **Kyle's to write.** Now unblocked: `fct_serves`, `mart_serve_patterns` and
   `mart_data_coverage` all exist, so there is something to route to and a
   coverage table to ground refusals in.
-- **Shot-direction orientation, `lessons/005`** — ~5% scope gap against Sackmann's
-  counts. Harness ready: `make investigate FILE=005_shot_direction_scope.sql`.
-  Next step is isolating H10a. Baseline: 1.19% exact, +19.55 avg gap, and the
-  error is one-directional (5,817 over-count, 1 under).
+- ~~**Shot-direction SCOPE, `lessons/005`**~~ — **resolved.** +19.55 → median +1
+  per match. Two rules: allow leading lets in the serve+return strip, and subtract
+  point-ending shots only when they were unforced errors *into the net*. The
+  residual is charter idiosyncrasy (per-charter mean −15.48 to +12.14), not a
+  missing rule. **Still open: the tactical mapping** — what `1`/`2`/`3` mean as
+  crosscourt / down-the-line / inside-out, which needs `fct_shots` because it
+  depends on where the previous ball went.

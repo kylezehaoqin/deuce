@@ -1,4 +1,4 @@
-# 005 — Shot direction orientation *(OPEN)*
+# 005 — Shot direction orientation
 
 > Three direction codes produce five tactical categories. The extra information
 > has to come from somewhere — and that "somewhere" is what makes shot parsing
@@ -6,7 +6,7 @@
 
 **Concept:** stateless vs. stateful parsing; why grain is a real decision
 **Lives in:** `docs/mcp-notation.md`, `dbt/models/staging/stg_stats_shot_direction.sql`
-**Status:** **OPEN** — ~5% gap unexplained. This one is yours to close.
+**Status:** scope **RESOLVED**; the tactical mapping is the remaining work.
 
 ## The question
 
@@ -117,6 +117,67 @@ under-counts. The error is entirely one-directional — which is what a *missing
 exclusion rule* looks like. A mapping error or a flaky regex would scatter in
 both directions. That single statistic is strong evidence for H10a and weak
 evidence against H10c, and it cost nothing to compute.
+
+## Resolved — and the residual turned out to be people
+
+Two corrections, both measured, took the per-match gap from **+19.55 to a median
+of +1**:
+
+```
+ start                                    +19.55 avg gap   1.19% exact
+ H10b  allow leading lets in the strip    +16.89
+ H10a  subtract net unforced errors        +2.34            5.69% exact
+```
+
+**H10b — the let.** 19,687 points in the 2020s begin with `c` (a let, repeatable).
+The serve+return strip was anchored `^[0-9]`, so on those points it silently
+matched nothing and the whole rally — return included — survived into the count.
+Found by grouping on `left(rally, 1)`, not by re-reading the regex. **When a regex
+"works", check what it silently declines to match.**
+
+**H10a — but only into the net.** Sackmann excludes the point-ending shot, as in
+rally length (lesson 004) — but only when it was an **unforced error into the
+net**. That is physically exactly right: a ball that hit the net never crossed the
+opponent's baseline, so there is no direction to record. A ball that went wide or
+long did cross it, and he counts those.
+
+The rejected alternatives are the evidence:
+
+| Subtraction rule | avg gap |
+|---|---:|
+| all unforced errors | −19.65 (over-corrects 8×) |
+| net errors, any terminator | −5.21 (forced net errors *are* counted) |
+| + shank / unknown-error | +2.32 (indistinguishable) |
+| **net unforced only** | **+2.34** |
+
+**The residual is charter idiosyncrasy, not a missing rule.** Per-charter mean gap:
+
+```
+ Angel Moreno   104 matches   -15.48   sd 7.42
+ Ludo           835           -4.09    sd 5.60
+ Zindaras      1480           +1.41    sd 7.84
+ BG             625           +7.16    sd 9.82
+ Isaac          837          +12.14    sd 8.28
+```
+
+Between-charter means span 28 shots; within-charter spread is a near-constant
+sd ≈ 7–8. The highest-volume charter sits at +1.41. So the rule is right and
+different volunteers apply the notation slightly differently — which is precisely
+what `dim_charters` exists to measure. A thing built to document a nuisance ended
+up explaining a three-session mystery.
+
+Two corroborating signals that this is noise and not a rule:
+
+- **Direction flipped.** At the start, 5,817 matches over-counted and **1** under-
+  counted — the signature of a missing exclusion. Now it is 3,218 over and 2,335
+  under. Balanced error is what "we have the rule, people are inconsistent" looks
+  like.
+- **It is era-independent** (+2.09 / +2.34 / +4.50 across 2010s / 2020s /
+  pre-2010), unlike the rally-length parser's 90 / 82 / 55%. A *scope* rule
+  generalises across charting eras; a *token-level parse* does not. Worth
+  remembering as a way to tell which kind of thing you are looking at.
+
+H10c — undirected shots counted under a default — was never needed.
 
 ## What's left
 

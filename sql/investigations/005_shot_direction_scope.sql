@@ -25,22 +25,29 @@
 --     UNFORCED errors, which do often carry one.
 --   * 7/8/9 are SERVICE-RETURN depth, not general shot depth.
 --
--- BASELINE to beat (the expression currently in CANDIDATE below):
---   avg gap  +19.5 shots/match   |   exact agreement  1.2%
---   We are counting TOO MANY. The remaining error is ~5%.
+-- RESOLVED -- both H10a and H10b were true, and the residual is neither.
 --
--- REMAINING HYPOTHESES (test ONE at a time):
---   H10a  Point-ending shots are excluded, mirroring his rally-length rule
---         where the shot that missed doesn't count (lessons/004). Most likely:
---         it is the same convention, and he is consistent elsewhere.
---   H10b  The serve+return strip is wrong. It assumes a fixed token shape;
---         serve-and-volley and second-serve strings may not match it.
---   H10c  Shots charted without a direction digit are counted under a default.
+--   start                    +19.55 avg gap   1.19% exact
+--   H10b  let fix            +16.89
+--   H10a  net unforced only   +2.34            5.69% exact, median +1
+--
+--   Residual is CHARTER IDIOSYNCRASY, not a missing rule. Per-charter mean gap
+--   spans -15.48 (Angel Moreno) to +12.14 (Isaac) while within-charter spread is
+--   a near-constant sd ~7-8. Zindaras, the highest-volume charter at 1,480
+--   matches, sits at +1.41. So the scope rule is right and different volunteers
+--   apply the notation slightly differently -- which is exactly what
+--   dim_charters was built to measure.
+--
+--   Note it is now era-INDEPENDENT (+2.09 / +2.34 / +4.50 across 2010s / 2020s /
+--   pre-2010), unlike the rally-length parser's 90/82/55%. A scope rule
+--   generalises across charting eras; a token-level parse does not.
+--
+--   H10c (undirected shots counted under a default) was never needed.
 --
 -- ---------------------------------------------------------------------------
 -- YOUR PREDICTION (write it BEFORE running -- rule 1):
 --
---   Round __ :  I am testing ________________________________________
+--   Round __ :  I am testing ___H10a, Point-ending shots excluded  
 --               I expect the gap to go from +19.5 to about _________
 --               because ______________________________________________
 --
@@ -98,10 +105,14 @@ WITH prepared AS (
     SELECT
         match_id,
         COALESCE(NULLIF(second_serve,''), NULLIF(first_serve,'')) AS rally,
-        -- Serve + return removed. If you are testing H10b, this is the line to
-        -- attack -- move it into `candidate` and rewrite it there.
+        -- Serve + return removed.
+        -- The leading `c*` is load-bearing: 19,687 points in the 2020s begin with
+        -- a LET ('c', repeatable), so an anchor of '^[0-9]' silently fails to
+        -- match and the whole rally -- including the return -- survives into
+        -- `tail`. Worth ~2.7 shots/match of overcount, found by grouping on
+        -- left(rally,1) rather than by reading the regex again.
         regexp_replace(COALESCE(NULLIF(second_serve,''), NULLIF(first_serve,'')),
-                       '^[0-9][-+=;^!]*[a-z][-+=;^!]*[1-9]?', '')  AS tail
+                       '^c*[0-9][-+=;^!]*[a-z][-+=;^!]*[1-9]?', '')  AS tail
     FROM raw.mcp_points
     WHERE COALESCE(NULLIF(second_serve,''), NULLIF(first_serve,'')) IS NOT NULL
       AND left(match_id, 4)::int >= :era_floor
@@ -110,34 +121,34 @@ WITH prepared AS (
 
 candidate AS (
 
-    -- ┌──────────────────────────────────────────────────────────────────────┐
-    -- │ TODO(kyle) -- THE HYPOTHESIS UNDER TEST                              │
-    -- │                                                                      │
-    -- │ Return one row per match: `directed_shots`, our count of the shots   │
-    -- │ we believe Sackmann counts in ShotDirection.csv.                     │
-    -- │                                                                      │
-    -- │ Below is the current baseline (+19.5 / 1.2%). Change ONE thing.      │
-    -- │                                                                      │
-    -- │ For H10a you need to exclude shots that ended the point. The signal  │
-    -- │ is in `rally`, not `tail`: a rally ending '@' or '#' means the LAST  │
-    -- │ shot missed. Note the asymmetry -- you are counting tokens in `tail` │
-    -- │ but the terminator lives at the end of `rally`. A point that ends in │
-    -- │ a winner ('*') did NOT have a missed shot.                           │
-    -- │                                                                      │
-    -- │ Useful shapes:                                                       │
-    -- │   cardinality(regexp_split_to_array(tail, '<pattern>')) - 1          │
-    -- │       -- count occurrences of <pattern>                              │
-    -- │   rally ~ '[@#]$'                                                    │
-    -- │       -- did this point end in an error                              │
-    -- │   greatest(0, <count> - <adjustment>)                                │
-    -- │       -- the clamp that mattered in lessons/004. Ask whether it      │
-    -- │          matters here too, and what the floor should be.             │
-    -- └──────────────────────────────────────────────────────────────────────┘
+    -- SETTLED. Two corrections took the gap from +19.55 to a median of +1.
+    --
+    --   1. The let fix, in `prepared` above.
+    --   2. Subtract the point-ending shot ONLY when it was an unforced error
+    --      into the NET. Physically: a ball that hit the net never crossed the
+    --      opponent's baseline, so it has no direction to record. A ball that
+    --      went wide or long did cross it, and Sackmann counts those.
+    --
+    -- Rejected alternatives, each measured (avg gap per match):
+    --      all unforced errors          -19.65   over-corrects 8x
+    --      net errors, any terminator    -5.21   forced net errors ARE counted
+    --      + shank / unknown-error       +2.32   indistinguishable from net-only
+    --      net unforced only             +2.34   <-- kept
+    --
+    -- The clamp is not decoration. When the shot that missed IS the return, it
+    -- was already stripped from `tail`, so the count is 0 and the subtraction
+    -- would go negative. That case needs no separate test: if the return missed
+    -- the point ended there, so a 0 count and a matching subtraction always
+    -- coincide.
 
     SELECT
         match_id,
         SUM(
-            cardinality(regexp_split_to_array(tail, '[fbs][-+=;^!]*[123]')) - 1
+            GREATEST(
+                0,
+                cardinality(regexp_split_to_array(tail, '[fbs][-+=;^!]*[123]')) - 1
+                - (rally ~ '[fbs][-+=;^!]*[123]n@$')::int
+            )
         )::int AS directed_shots
     FROM prepared
     GROUP BY match_id

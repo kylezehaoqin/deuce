@@ -216,7 +216,7 @@ disclose it rather than compare across eras silently.
 |---|---|---|
 | Rally length | `stats-Rally.csv` | ✅ 90.0% (2020s), regression-tested |
 | Shot-type letters | `stats-ShotTypes.csv` | not yet diffed |
-| Direction → tactical terms | `stats-ShotDirection.csv` | `lessons/005`, ~5% scope gap open |
+| Direction → tactical terms | `stats-ShotDirection.csv` | scope resolved (median +1/match); mapping still open — `lessons/005` |
 | Direction → outcome | `stats-ShotDirOutcomes.csv` | not yet diffed |
 
 The spec tells you what the parser *should* do. The oracle tells you what yours
