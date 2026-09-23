@@ -20,9 +20,9 @@ it — not "less precisely", *cannot* (lesson 009).
 | Grain | Key | State |
 |---|---|---|
 | Shot | `(match, point, shot_no)` | gated — tokenizer |
-| Serve | `(match, point, serve_no)` | **buildable** |
-| Point | `(match, point)` | built — `int_point_rally_length` |
-| Game | `(match, game_no)` | **buildable** |
+| Serve | `(match, point, serve_no)` | built — `fct_serves` |
+| Point | `(match, point)` | built — `fct_points` |
+| Game | `(match, game_no)` | built — `fct_games` |
 | Set | `(match, set_no)` | buildable, low value |
 | Match-player | `(match, player)` | exists only as oracle tables |
 | Player-period | `(player, year, surface)` | **buildable** |
@@ -38,7 +38,7 @@ question class, neither exists anywhere upstream.
 
 Unglamorous. The agent does not work without these.
 
-### `dim_players`
+### `dim_players` — BUILT
 **Grain:** one row per player.
 **Columns:** canonical name, handedness, tour, first/last charted date, match
 count, `pg_trgm` index on name.
@@ -46,7 +46,12 @@ count, `pg_trgm` index on name.
 resolution is the first thing every query needs.
 **Verified:** 1,739 distinct names, **zero** case or punctuation variants — no
 entity resolution required, which makes this genuinely trivial.
-**Status:** buildable. Blocking for Increment 2.
+**Built.** Fuzzy lookup verified: `'federr'` → Roger Federer, `'swiatek'` → Iga
+Swiatek. The trigram index exists and the planner correctly ignores it at 1,739
+rows / 568 kB — kept because it costs nothing, but it is not doing work today.
+`mode()` resolves handedness by majority vote, which matters: 49 players have
+charter disagreements, including Nadal and Kvitova, and the vote gets all of
+them right.
 
 ### `dim_charters`
 **Grain:** one row per `charted_by`.
@@ -110,7 +115,7 @@ aggregate, reconciled by `assert_serve_patterns_matches_fact`.
 Every statistic precomputed here is one the agent cannot get wrong; every column
 precomputed is a question it can no longer ask.
 
-### `fct_games`
+### `fct_games` — BUILT
 **Grain:** `(match, game_no)`.
 **Columns:** server, held/broken, reached deuce, max deficit faced, points
 played, set/game score at start.
@@ -123,7 +128,11 @@ it. Unlocks:
 - Game-level momentum — which is where the folk belief actually lives. People say
   "he lost momentum" about games, not points.
 
-**Cheap:** an aggregation of a table that already exists.
+**Built.** Sanity-checked against reality: men's hold rate **80.2%**, women's
+**66.5%**. Tiebreaks are structurally not games — the server rotates every two
+points — so `server_name`, `held` and `broken` are NULL on those 4,928 rows
+rather than wrong. The detector is exact: every tiebreak shows a server change
+and no regular game does.
 
 ### `mart_rally_shape`
 **Grain:** `(player, rally_bucket, surface, year)`.

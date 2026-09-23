@@ -3,7 +3,7 @@
 -- ============================================================================
 --  fct_serves -- TRUE SERVE GRAIN. One row per serve struck, faults included.
 --
---  fct_serve_points is one row per POINT and holds both serves side by side.
+--  fct_points is one row per POINT and holds both serves side by side.
 --  This model unpivots that into one row per SERVE, which is the grain every
 --  serve question actually has:
 --
@@ -21,14 +21,14 @@
 
 with points as (
 
-    select * from {{ ref('fct_serve_points') }}
+    select * from {{ ref('fct_points') }}
 
 ),
 
 first_serves as (
 
     select
-        serve_point_key,
+        point_key,
         match_id, point_number, game_number,
         server_name, returner_name, server_hand, returner_hand,
         court_side, pressure, is_break_point, is_game_point, is_deuce,
@@ -47,7 +47,7 @@ first_serves as (
 second_serves as (
 
     select
-        serve_point_key,
+        point_key,
         match_id, point_number, game_number,
         server_name, returner_name, server_hand, returner_hand,
         court_side, pressure, is_break_point, is_game_point, is_deuce,
@@ -68,7 +68,7 @@ second_serves as (
 )
 
 select
-    {{ dbt_utils.generate_surrogate_key(['serve_point_key', 'serve_number']) }}
+    {{ dbt_utils.generate_surrogate_key(['point_key', 'serve_number']) }}
         as serve_key,
     *
 from (

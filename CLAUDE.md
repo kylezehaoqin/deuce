@@ -137,8 +137,10 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
 
 - `dbt/models/marts/fct_shots.sql` — stub, `enabled=false`. Grain decision written
   up in the file header. **Kyle's to write.**
+- ~~`dim_players`, `fct_games`~~ — **done.** Name resolution via pg_trgm; game
+  grain with hold/break (NULL on tiebreaks, where the server rotates).
 - ~~`mart_serve_patterns`~~ — **done.** Kyle chose option C (fact + aggregate):
-  `fct_serve_points` (point grain) → `fct_serves` (serve grain, faults included)
+  `fct_points` (point grain) → `fct_serves` (serve grain, faults included)
   → `mart_serve_patterns` (aggregated, entropy precomputed). Drift between the
   pair is caught by `assert_serve_patterns_matches_fact`.
 - `src/tennis_analytics/agent/prompts.py` — `SYSTEM_PROMPT` is a TODO.

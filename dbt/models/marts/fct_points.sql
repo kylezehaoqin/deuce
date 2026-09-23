@@ -1,11 +1,15 @@
 {{ config(materialized='table') }}
 
 -- ============================================================================
---  fct_serve_points -- FACT GRAIN. One row per point, from the server's view.
+--  fct_points -- FACT GRAIN. One row per point, everything resolved.
 --
---  Half of the "option C" pair:
---    fct_serve_points    (this)  -- every point, sliceable by anything
---    mart_serve_patterns         -- pre-aggregated, entropy computed once
+--  The point-grain fact table the rest of the mart layer derives from:
+--    fct_points   (this)  -- one row per point
+--    fct_serves           -- unpivoted to one row per SERVE
+--    fct_games            -- aggregated up to one row per GAME
+--
+--  Named for its grain, not its columns. It carries serve context, rally shape
+--  and pressure because all three are properties of a point.
 --
 --  Why both: the agent can slice this table any way a question demands, and
 --  reach for the aggregate when it needs a statistic that is easy to get wrong.
@@ -49,7 +53,7 @@ final as (
 
     select
         {{ dbt_utils.generate_surrogate_key(['p.match_id', 'p.point_number']) }}
-                                                        as serve_point_key,
+                                                        as point_key,
         p.match_id,
         p.point_number,
         p.game_number,
@@ -82,6 +86,9 @@ final as (
         p.court_side,
         p.is_second_serve_point,
         p.is_tiebreak_set,
+        p.set_number,
+        p.p1_games_won,
+        p.p2_games_won,
         p.point_score,
         p.server_points,
         p.returner_points,

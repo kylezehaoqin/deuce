@@ -4,13 +4,15 @@ version: 2
 # A column documented badly is a column used badly (lesson 003).
 
 models:
-  - name: fct_serve_points
+  - name: fct_points
     description: >
-      One row per point, from the server's perspective. Both serves are carried
-      side by side, so a faulted first serve is still visible. Grain is POINT,
-      not serve -- use fct_serves for serve-grain questions.
+      One row per point, with server, returner, handedness, pressure, rally
+      shape and both serves resolved. The point-grain fact table the rest of the
+      mart layer derives from. Both serves are carried side by side, so a
+      faulted first serve is still visible -- but the grain is POINT, so use
+      fct_serves for serve-grain questions.
     columns:
-      - name: serve_point_key
+      - name: point_key
         description: Surrogate key over (match_id, point_number).
         data_tests: [not_null, unique]
       - name: server_name
@@ -63,7 +65,7 @@ models:
       ratio of ratios.
     columns:
       - name: serve_key
-        description: Surrogate key over (serve_point_key, serve_number).
+        description: Surrogate key over (point_key, serve_number).
         data_tests: [not_null, unique]
       - name: serve_number
         description: 1 or 2.
@@ -119,3 +121,82 @@ models:
         description: Faults wide of the box.
       - name: faults_wide_deep
         description: Faults both wide and long.
+
+  - name: dim_players
+    description: >
+      One row per player. The agent's name-resolution table -- users say
+      "Alcaraz", the marts key on "Carlos Alcaraz". A trigram index supports
+      fuzzy lookup via the % operator and similarity(). Coverage columns exist
+      so the agent can judge whether it has enough data to answer.
+    columns:
+      - name: player_name
+        description: Canonical name as charted. Join key for every other mart.
+        data_tests: [not_null, unique]
+      - name: hand
+        description: >
+          R or L, resolved by majority vote across the player's matches.
+          Charters mistype this; 49 players have disagreeing rows.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['R', 'L']
+              config:
+                where: "hand is not null"
+      - name: is_hand_ambiguous
+        description: True when charters disagreed about this player's handedness.
+      - name: matches_charted
+        description: Distinct matches. The first thing to check before trusting any rate about this player.
+      - name: matches_2020s
+        description: >
+          Matches from 2020 onward, where the shot parser is ~90% accurate. A
+          player with few of these has weaker parsed statistics than
+          matches_charted suggests.
+      - name: matches_pre_2010
+        description: Matches before 2010, where parser agreement drops to ~55%.
+
+  - name: fct_games
+    description: >
+      One row per game. The unit of a pressure episode -- points are too
+      granular for "he got broken", matches too coarse. Sanity-checked against
+      reality: men's hold rate 80.2%, women's 66.5%.
+    columns:
+      - name: game_key
+        description: Surrogate key over (match_id, game_number).
+        data_tests: [not_null, unique]
+      - name: is_tiebreak
+        description: >
+          True for tiebreaks, where the server rotates every two points. All
+          4,928 tiebreaks in the data show a server change and no regular game
+          does, so this detector is exact.
+      - name: server_name
+        description: NULL on tiebreaks -- there is no single server to credit.
+      - name: held
+        description: >
+          True if the server won the game. NULL on tiebreaks rather than wrong.
+          Filter `not is_tiebreak` for hold/break questions.
+      - name: broken
+        description: Inverse of held. NULL on tiebreaks.
+      - name: game_winner_name
+        description: >
+          Winner of the game's last point, hence of the game. Meaningful on
+          tiebreaks too, unlike held/broken. NULL for 50 games belonging to 2
+          matches absent from the matches file upstream -- there are no player
+          names to resolve. The same gap the stg_points relationships test warns
+          about.
+        data_tests:
+          - not_null:
+              config:
+                # Scoped to games whose match row resolved. match_date is NULL
+                # exactly when the match is missing upstream, so this asserts
+                # the rule where it can hold instead of muting it everywhere.
+                where: "match_date is not null"
+      - name: break_points_faced
+        description: Points in this game where the returner could win it.
+      - name: max_deficit_faced
+        description: >
+          Largest point deficit the server faced. 3 means 0-40 or worse, so
+          `max_deficit_faced >= 3` finds triple-break-point games.
+      - name: reached_deuce
+        description: True if the game reached 40-40 at any point.
+      - name: set_number
+        description: Which set of the match this game belongs to, starting at 1.

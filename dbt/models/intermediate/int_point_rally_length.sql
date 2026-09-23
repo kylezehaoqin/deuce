@@ -43,6 +43,14 @@ final as (
         p.is_second_serve_point,
         p.is_tiebreak_set,
 
+        -- Set context. Upstream carries sets-won-so-far, so the set in progress
+        -- is one more than the sets already decided.
+        p.p1_sets_won,
+        p.p2_sets_won,
+        p.p1_sets_won + p.p2_sets_won + 1          as set_number,
+        p.p1_games_won,
+        p.p2_games_won,
+
         {{ mcp_rally_length('p.rally_notation') }} as rally_length,
 
         -- Sackmann's buckets, so this model can be diffed against his directly.
