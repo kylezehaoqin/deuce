@@ -108,7 +108,7 @@ pressure flags, server/returner + handedness, surface, `parse_confidence`.
 
 ### `mart_serve_patterns` — BUILT
 **Grain:** `(server, court_side, pressure, serve_number, parse_confidence)`.
-Option C was chosen: fact tables (`fct_serve_points`, `fct_serves`) **and** this
+Option C was chosen: fact tables (`fct_points`, `fct_serves`) **and** this
 aggregate, reconciled by `assert_serve_patterns_matches_fact`.
 **Why:** `questions.yml` #1 and #9; reference data for T3/T4/T5.
 **Note:** the fact-vs-aggregate trade-off is written up in the scaffold header.

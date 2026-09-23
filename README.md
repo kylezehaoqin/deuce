@@ -143,6 +143,8 @@ dbt/
 
 docs/mcp-notation.md      the shot-notation codebook + measured accuracy
 docs/marts.md             what the warehouse exposes, at what grain, and why
+docs/schema.md            live schema, layer diagrams, and the relational-theory
+                          reasoning (why raw breaks 1NF and marts break 3NF)
 lessons/                  why the repo is built this way: decisions, trade-offs,
                           a hypothesis log and an error log
 questions.yml             16 questions: demo script, mart spec, and eval set

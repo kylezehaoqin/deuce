@@ -85,6 +85,17 @@ Python is pinned to 3.12 (`.python-version`) — dbt-core and Dagster do not sup
 - **Write the prediction before running the query.** The gap between prediction
   and result is the signal; without it a surprising result just looks like a result.
 
+## Schema
+
+`docs/schema.md` is the current *state*: physical layout with row counts, ER
+diagrams for raw and marts, a layer flow diagram, grain statements for every
+table, and the normalisation reasoning (raw breaks 1NF deliberately, marts break
+3NF deliberately). `docs/marts.md` is the *plan*; this is what exists.
+
+Two open findings recorded there: `fct_serve_points` is a 474 MB orphan left by
+a model rename, and no fact or mart table has any index -- a typical agent query
+on `fct_serves` seq-scans 706 MB for 1.6s to return 7 rows.
+
 ## Mart design
 
 `docs/marts.md` is the map: the grain ladder, every proposed mart with its grain
