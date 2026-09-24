@@ -130,6 +130,17 @@ dropped, and the fact tables are indexed via model config with
 `assert_indexes_exist.sql` asserting they stay that way. The cited agent query
 went from 384 ms / 90,482 buffers to 28 ms / 1,026. (lesson 010)
 
+## What to trust
+
+`docs/data-trust.md` tiers every fact in the warehouse: verified against an
+external oracle (A), deductively exact (B), usable with a stated caveat (C), not
+yet trustworthy (D), and absent from the source entirely. It also lists the
+deductions that are defensible and the ones that are not.
+
+**Read it before answering any analytical question**, and before writing the
+agent's system prompt -- it is the grounding contract in prose form. An answer
+inherits the lowest tier of its inputs.
+
 ## Mart design
 
 `docs/marts.md` is the map: the grain ladder, every proposed mart with its grain
@@ -198,24 +209,32 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
 
 ## Open work
 
-- `dbt/models/marts/fct_shots.sql` — stub, `enabled=false`. Grain decision written
-  up in the file header. **Kyle's to write.**
-- ~~`dim_players`, `fct_games`~~ — **done.** Name resolution via pg_trgm; game
-  grain with hold/break (NULL on tiebreaks, where the server rotates).
-- ~~`mart_serve_patterns`~~ — **done.** Kyle chose option C (fact + aggregate):
-  `fct_points` (point grain) → `fct_serves` (serve grain, faults included)
-  → `mart_serve_patterns` (aggregated, entropy precomputed). Drift between the
-  pair is caught by `assert_serve_patterns_matches_fact`.
-- ~~`dim_charters`, `mart_data_coverage`, Dagster~~ — **done.** Increment 1 closes:
-  `dbt build` green and the Dagster UI shows the asset graph.
-- `src/tennis_analytics/agent/prompts.py` — `SYSTEM_PROMPT` is a TODO.
-  **Kyle's to write.** Now unblocked: `fct_serves`, `mart_serve_patterns` and
-  `mart_data_coverage` all exist, so there is something to route to and a
-  coverage table to ground refusals in.
-- ~~**Shot-direction SCOPE, `lessons/005`**~~ — **resolved.** +19.55 → median +1
-  per match. Two rules: allow leading lets in the serve+return strip, and subtract
-  point-ending shots only when they were unforced errors *into the net*. The
-  residual is charter idiosyncrasy (per-charter mean −15.48 to +12.14), not a
-  missing rule. **Still open: the tactical mapping** — what `1`/`2`/`3` mean as
-  crosscourt / down-the-line / inside-out, which needs `fct_shots` because it
-  depends on where the previous ball went.
+**State:** Increments 0 and 1 complete. `dbt build` 56 pass / 1 warn, pytest 31.
+Marts: `fct_points` -> `fct_serves` / `fct_games`, `mart_serve_patterns`,
+`dim_players`, `dim_charters`, `mart_data_coverage`. Dagster orchestrates
+ingest + dbt. Everything on `main`, **not pushed to a remote yet** -- the brief
+wants public dated commits, so that is worth fixing.
+
+Kyle's, in priority order:
+
+- **`src/tennis_analytics/agent/prompts.py`** -- `SYSTEM_PROMPT` is a TODO and is
+  now genuinely unblocked: three marts exist to route to, and
+  `docs/data-trust.md` is the grounding contract it has to encode. This is the
+  critical path to Increment 2.
+- **`dbt/models/marts/fct_shots.sql`** -- stub, `enabled=false`. Needs a
+  tokenizer first (lesson 009); decide its home (Python in `ingest/`, SQL in
+  dbt, or the existing Rust parser as an oracle for one of those). Days, not
+  hours. Unblocks the tactical direction mapping, serve+1, T6, T7.
+- **Three review corrections to lesson 005**, raised and not yet applied:
+  the median is 2 not 1 (all eras: mean 2.70, median 2, p25 -3, p75 +8);
+  "charter idiosyncrasy" is 23% of residual variance, not the residual
+  (between-charter 25.2 of 111.6 total, within-charter 86.4); and the physical
+  rationale for the net-unforced-error rule contradicts the measured finding
+  that *forced* net errors ARE counted. The rule is solid, the stated reason
+  is not -- better to say the mechanism is unknown.
+
+Mine, queued:
+
+- `mart_rally_shape`, `mart_pressure_index`, `mart_player_style`,
+  `mart_matchup` -- see `docs/marts.md` build order.
+- The pgvector leg once a style mart exists.

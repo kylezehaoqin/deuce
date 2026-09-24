@@ -11,6 +11,7 @@ Reference. Look things up; don't copy them into writing.
 - [Entropy as a metric](#entropy-as-a-metric)
 - [Oracle testing](#oracle-testing)
 - [Idempotency](#idempotency)
+- [Two kinds of trust](#two-kinds-of-trust)
 
 ---
 
@@ -339,3 +340,28 @@ itself.
 already loaded stay loaded — the new run rejects them instead of updating them.
 Convergence only holds while the rules do. Tightening a rule needs a full
 refresh or a tombstone strategy.
+
+---
+
+## Two kinds of trust
+
+Worth separating, because they're independent and a result needs both.
+
+**Parse trust** — did you decode the source correctly? Settled by diffing
+against an oracle or a spec. Objective, and it closes: once the rule is right,
+it's right.
+
+**Inference trust** — does the conclusion survive its confounds? Settled by
+controls, sample size and significance. Never fully closes — a bigger sample or
+an unconsidered confound can reopen it.
+
+The failure modes are symmetric and both look like success:
+
+- Perfect parse, bad inference → clean numbers supporting a backwards
+  conclusion. (A pooled query said momentum was real; one control flipped it.)
+- Good inference, bad parse → a well-controlled analysis of the wrong quantity.
+
+**A result inherits the lower of the two.** Which is why "how accurate is the
+parser" and "does this finding hold" are different questions that both have to
+be asked, and why a data-quality tier list is worth writing down rather than
+carrying in your head.
