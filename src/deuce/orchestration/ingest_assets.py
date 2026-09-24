@@ -50,8 +50,8 @@ from dagster import (
     asset,
 )
 
-from tennis_analytics.ingest import SOURCES, SourceSpec
-from tennis_analytics.ingest.loader import LoadResult, load
+from deuce.ingest import SOURCES, SourceSpec
+from deuce.ingest.loader import LoadResult, load
 
 # Transient failures here are network failures -- GitHub rate limits, a dropped
 # connection mid-stream. Exponential backoff, because retrying a rate limit

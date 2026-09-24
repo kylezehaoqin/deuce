@@ -1,8 +1,8 @@
-name: tennis_analytics
+name: deuce
 version: 0.1.0
 config-version: 2
 
-profile: tennis_analytics
+profile: deuce
 
 model-paths: ["models"]
 macro-paths: ["macros"]
@@ -12,7 +12,7 @@ target-path: "target"
 clean-targets: ["target", "dbt_packages"]
 
 models:
-  tennis_analytics:
+  deuce:
     +schema: analytics
     staging:
       # Views: cheap, always fresh, and the staging layer does no heavy work.

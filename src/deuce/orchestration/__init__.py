@@ -4,6 +4,6 @@
 [tool.dagster] and `make dagster`).
 """
 
-from tennis_analytics.orchestration.definitions import defs
+from deuce.orchestration.definitions import defs
 
 __all__ = ["defs"]

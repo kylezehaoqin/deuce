@@ -1,6 +1,9 @@
-# Tennis Analytics Agent — working notes
+# Deuce — working notes
 
 Natural-language analytics agent over Jeff Sackmann's Match Charting Project data.
+The Python package, dbt project and CLI are all `deuce`. The Postgres database
+stays `tennis` -- it is named for the data, not the project, and renaming it
+would mean re-ingesting 1.9M points for nothing.
 Two stacked layers in one repo: a dbt/Dagster/Postgres warehouse, and a LangGraph
 text-to-SQL agent on top of it. See README.md for the vision and the increment plan.
 
@@ -26,7 +29,7 @@ Two honesty rules on top:
   was shown to have teeth.
 
 Good scaffold examples to imitate: `dbt/models/marts/fct_shots.sql`,
-`src/tennis_analytics/agent/prompts.py`,
+`src/deuce/agent/prompts.py`,
 `sql/investigations/005_shot_direction_scope.sql`.
 
 ## Commands
@@ -59,7 +62,7 @@ Python is pinned to 3.12 (`.python-version`) — dbt-core and Dagster do not sup
   `sql/`, never appended to one already applied. Everything is
   `CREATE … IF NOT EXISTS` so Docker's init and `make db-init` run the same files.
   Comments in an old migration may be corrected; statements may not. (lesson 008)
-- **Adding a source:** one `SourceSpec` in `src/tennis_analytics/ingest/sources.py`
+- **Adding a source:** one `SourceSpec` in `src/deuce/ingest/sources.py`
   + one table in a new `sql/00N_*.sql`. `tests/test_sources.py` enforces that the
   two agree, across every migration file.
 - **Oracle sources** (`stats_rally`, `stats_shot_types`, `stats_shot_direction`)
@@ -100,7 +103,7 @@ Python is pinned to 3.12 (`.python-version`) — dbt-core and Dagster do not sup
 
 ## Orchestration
 
-`src/tennis_analytics/orchestration/` holds the Dagster layer: one asset per
+`src/deuce/orchestration/` holds the Dagster layer: one asset per
 ingest source, dbt models as assets via `dagster-dbt`, a stopped-by-default daily
 schedule, and a volume-anomaly asset check per source. 20 assets, 38 checks.
 
@@ -217,7 +220,7 @@ wants public dated commits, so that is worth fixing.
 
 Kyle's, in priority order:
 
-- **`src/tennis_analytics/agent/prompts.py`** -- `SYSTEM_PROMPT` is a TODO and is
+- **`src/deuce/agent/prompts.py`** -- `SYSTEM_PROMPT` is a TODO and is
   now genuinely unblocked: three marts exist to route to, and
   `docs/data-trust.md` is the grounding contract it has to encode. This is the
   critical path to Increment 2.

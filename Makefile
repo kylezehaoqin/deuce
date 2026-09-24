@@ -32,27 +32,27 @@ psql:  ## Open a psql shell
 # -------------------------------------------------------------- ingest ----
 
 db-init:  ## Apply sql/*.sql (idempotent)
-	uv run tennis init-db
+	uv run deuce init-db
 
 ingest:  ## Load matches + serve-direction stats (fast -- enough for `make demo`)
-	uv run tennis load matches
-	uv run tennis load stats_serve_direction
+	uv run deuce load matches
+	uv run deuce load stats_serve_direction
 
 ingest-points:  ## Load the point-by-point files (178 MB, ~1.9M points, ~60s)
-	uv run tennis load points
+	uv run deuce load points
 
 ingest-oracles:  ## Load Sackmann's own aggregations (ground truth for our parser)
-	uv run tennis load stats_rally
-	uv run tennis load stats_shot_types
-	uv run tennis load stats_shot_direction
+	uv run deuce load stats_rally
+	uv run deuce load stats_shot_types
+	uv run deuce load stats_shot_direction
 
 ingest-all: ingest ingest-points ingest-oracles  ## Everything
 
 status:  ## Row counts, ingest runs, dead-letter count
-	uv run tennis status
+	uv run deuce status
 
 demo:  ## Increment 0 proof-of-life -- make demo PLAYER="Iga Swiatek"
-	uv run tennis demo "$(PLAYER)"
+	uv run deuce demo "$(PLAYER)"
 
 # ----------------------------------------------------------------- dbt ----
 
@@ -81,16 +81,16 @@ dagster-validate:  ## Load the definitions without running anything (CI gate)
 
 refresh:  ## Materialize the daily job: small sources + full dbt rebuild
 	@mkdir -p $(DAGSTER_HOME)
-	DAGSTER_HOME=$(DAGSTER_HOME) uv run dagster job execute -j daily_refresh -m tennis_analytics.orchestration
+	DAGSTER_HOME=$(DAGSTER_HOME) uv run dagster job execute -j daily_refresh -m deuce.orchestration
 
 backfill:  ## Reload ONE points file -- make backfill PARTITION=charting-m-points-2020s.csv
 	@test -n "$(PARTITION)" || (echo "set PARTITION=<filename>; see: make partitions"; exit 1)
 	@mkdir -p $(DAGSTER_HOME)
 	DAGSTER_HOME=$(DAGSTER_HOME) uv run dagster asset materialize \
-		--select 'raw/mcp_points' --partition '$(PARTITION)' -m tennis_analytics.orchestration
+		--select 'raw/mcp_points' --partition '$(PARTITION)' -m deuce.orchestration
 
 partitions:  ## List the valid PARTITION values for `make backfill`
-	@uv run python -c "from tennis_analytics.ingest import SOURCES; [print(' ', f) for f in SOURCES['points'].files]"
+	@uv run python -c "from deuce.ingest import SOURCES; [print(' ', f) for f in SOURCES['points'].files]"
 
 # ------------------------------------------------------- investigations ----
 

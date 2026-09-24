@@ -1,5 +1,5 @@
 [project]
-name = "tennis-analytics"
+name = "deuce"
 version = "0.1.0"
 description = "Natural-language analytics agent over shot-level tennis match-charting data."
 readme = "README.md"
@@ -39,19 +39,19 @@ dev = [
 ]
 
 [project.scripts]
-tennis = "tennis_analytics.cli:app"
+deuce = "deuce.cli:app"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/tennis_analytics"]
+packages = ["src/deuce"]
 
 [tool.dagster]
 # `dagster dev` discovers the code location from here, so it needs no arguments.
-module_name = "tennis_analytics.orchestration"
-code_location_name = "tennis_analytics"
+module_name = "deuce.orchestration"
+code_location_name = "deuce"
 
 [tool.ruff]
 line-length = 100

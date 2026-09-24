@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dagster_dbt import DbtCliResource, DbtProject
 
-from tennis_analytics.config import REPO_ROOT
+from deuce.config import REPO_ROOT
 
 # DbtProject locates the project and its manifest. `prepare_if_dev()` regenerates
 # the manifest on `dagster dev` so editing a model shows up in the UI without a

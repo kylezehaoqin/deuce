@@ -14,8 +14,8 @@ import json
 
 import pytest
 
-from tennis_analytics.config import REPO_ROOT
-from tennis_analytics.ingest import SOURCES
+from deuce.config import REPO_ROOT
+from deuce.ingest import SOURCES
 
 MANIFEST = REPO_ROOT / "dbt" / "target" / "manifest.json"
 
@@ -46,7 +46,7 @@ def test_asset_keys_match_dbt_sources(dbt_source_tables) -> None:
     dagster-dbt's default translator maps a dbt source to
     AssetKey([schema, identifier]). Our `_asset_key` must agree exactly.
     """
-    from tennis_analytics.orchestration.ingest_assets import _asset_key
+    from deuce.orchestration.ingest_assets import _asset_key
 
     for spec in SOURCES.values():
         key = tuple(_asset_key(spec).path)
@@ -63,7 +63,7 @@ def test_definitions_load_and_have_no_orphan_models() -> None:
     the `context` annotation and breaks Dagster's runtime type inspection), plus
     any key collision or missing resource.
     """
-    from tennis_analytics.orchestration import defs
+    from deuce.orchestration import defs
 
     graph = defs.get_repository_def().asset_graph
     keys = list(graph.get_all_asset_keys())
@@ -77,6 +77,6 @@ def test_definitions_load_and_have_no_orphan_models() -> None:
 
 def test_points_source_is_partitioned_by_its_files() -> None:
     """Partition keys are filenames, so they must stay in step with the spec."""
-    from tennis_analytics.orchestration.ingest_assets import POINT_FILES
+    from deuce.orchestration.ingest_assets import POINT_FILES
 
     assert set(POINT_FILES.get_partition_keys()) == set(SOURCES["points"].files)

@@ -27,10 +27,10 @@ import psycopg
 import structlog
 from psycopg import sql
 
-from tennis_analytics.config import settings
-from tennis_analytics.db import connect
-from tennis_analytics.ingest.schemas import VALIDATORS
-from tennis_analytics.ingest.sources import SourceSpec
+from deuce.config import settings
+from deuce.db import connect
+from deuce.ingest.schemas import VALIDATORS
+from deuce.ingest.sources import SourceSpec
 
 log = structlog.get_logger()
 

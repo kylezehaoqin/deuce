@@ -49,7 +49,7 @@ flowchart TB
     A3["charting-*-stats-*.csv<br/>(oracles)"]
   end
 
-  subgraph ING["Ingest — Python (src/tennis_analytics/ingest/)"]
+  subgraph ING["Ingest — Python (src/deuce/ingest/)"]
     B1["download()<br/>stream to data/raw/"]
     B2["Pydantic shape check<br/>+ field-count check"]
     B3{"reject rate<br/>&lt; 5% ?"}

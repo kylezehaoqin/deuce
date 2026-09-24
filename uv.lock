@@ -480,6 +480,62 @@ wheels = [
 ]
 
 [[package]]
+name = "deuce"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "httpx" },
+    { name = "psycopg", extra = ["binary"] },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "python-dotenv" },
+    { name = "structlog" },
+    { name = "typer" },
+]
+
+[package.optional-dependencies]
+agent = [
+    { name = "langchain-core" },
+    { name = "langfuse" },
+    { name = "langgraph" },
+    { name = "pgvector" },
+]
+dev = [
+    { name = "pytest" },
+    { name = "ruff" },
+]
+pipeline = [
+    { name = "dagster" },
+    { name = "dagster-dbt" },
+    { name = "dagster-webserver" },
+    { name = "dbt-core" },
+    { name = "dbt-postgres" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "dagster", marker = "extra == 'pipeline'", specifier = ">=1.8" },
+    { name = "dagster-dbt", marker = "extra == 'pipeline'", specifier = ">=0.24" },
+    { name = "dagster-webserver", marker = "extra == 'pipeline'", specifier = ">=1.8" },
+    { name = "dbt-core", marker = "extra == 'pipeline'", specifier = ">=1.8" },
+    { name = "dbt-postgres", marker = "extra == 'pipeline'", specifier = ">=1.8" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "langchain-core", marker = "extra == 'agent'", specifier = ">=0.3" },
+    { name = "langfuse", marker = "extra == 'agent'", specifier = ">=2.50" },
+    { name = "langgraph", marker = "extra == 'agent'", specifier = ">=0.2" },
+    { name = "pgvector", marker = "extra == 'agent'", specifier = ">=0.3" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
+    { name = "pydantic", specifier = ">=2.9" },
+    { name = "pydantic-settings", specifier = ">=2.5" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3" },
+    { name = "python-dotenv", specifier = ">=1.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.7" },
+    { name = "structlog", specifier = ">=24.4" },
+    { name = "typer", specifier = ">=0.12" },
+]
+provides-extras = ["pipeline", "agent", "dev"]
+
+[[package]]
 name = "distro"
 version = "1.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2153,62 +2209,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/47/c6/ee486fd809e357697
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d7/c1/eb8f9debc45d3b7918a32ab756658a0904732f75e555402972246b0b8e71/tenacity-9.1.4-py3-none-any.whl", hash = "sha256:6095a360c919085f28c6527de529e76a06ad89b23659fa881ae0649b867a9d55", size = 28926, upload-time = "2026-02-07T10:45:32.24Z" },
 ]
-
-[[package]]
-name = "tennis-analytics"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "httpx" },
-    { name = "psycopg", extra = ["binary"] },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "python-dotenv" },
-    { name = "structlog" },
-    { name = "typer" },
-]
-
-[package.optional-dependencies]
-agent = [
-    { name = "langchain-core" },
-    { name = "langfuse" },
-    { name = "langgraph" },
-    { name = "pgvector" },
-]
-dev = [
-    { name = "pytest" },
-    { name = "ruff" },
-]
-pipeline = [
-    { name = "dagster" },
-    { name = "dagster-dbt" },
-    { name = "dagster-webserver" },
-    { name = "dbt-core" },
-    { name = "dbt-postgres" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "dagster", marker = "extra == 'pipeline'", specifier = ">=1.8" },
-    { name = "dagster-dbt", marker = "extra == 'pipeline'", specifier = ">=0.24" },
-    { name = "dagster-webserver", marker = "extra == 'pipeline'", specifier = ">=1.8" },
-    { name = "dbt-core", marker = "extra == 'pipeline'", specifier = ">=1.8" },
-    { name = "dbt-postgres", marker = "extra == 'pipeline'", specifier = ">=1.8" },
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "langchain-core", marker = "extra == 'agent'", specifier = ">=0.3" },
-    { name = "langfuse", marker = "extra == 'agent'", specifier = ">=2.50" },
-    { name = "langgraph", marker = "extra == 'agent'", specifier = ">=0.2" },
-    { name = "pgvector", marker = "extra == 'agent'", specifier = ">=0.3" },
-    { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
-    { name = "pydantic", specifier = ">=2.9" },
-    { name = "pydantic-settings", specifier = ">=2.5" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3" },
-    { name = "python-dotenv", specifier = ">=1.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.7" },
-    { name = "structlog", specifier = ">=24.4" },
-    { name = "typer", specifier = ">=0.12" },
-]
-provides-extras = ["pipeline", "agent", "dev"]
 
 [[package]]
 name = "text-unidecode"

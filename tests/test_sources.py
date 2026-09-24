@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from tennis_analytics.config import REPO_ROOT
-from tennis_analytics.ingest import SOURCES
+from deuce.config import REPO_ROOT
+from deuce.ingest import SOURCES
 
 # Read every migration, not just 002 -- new tables arrive in new numbered files,
 # and a check pinned to one file silently stops covering anything added later.

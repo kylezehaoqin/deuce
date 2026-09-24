@@ -12,7 +12,7 @@ from pathlib import Path
 
 import psycopg
 
-from tennis_analytics.config import REPO_ROOT, settings
+from deuce.config import REPO_ROOT, settings
 
 
 @contextmanager

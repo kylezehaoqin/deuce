@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from tennis_analytics.ingest.schemas import RawPoint
+from deuce.ingest.schemas import RawPoint
 
 
 def test_accepts_a_normal_point() -> None:

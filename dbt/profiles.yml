@@ -1,6 +1,6 @@
 # Checked in on purpose: every value comes from the environment, no secrets here.
 # Point dbt at it with  --profiles-dir dbt  (the Makefile does this for you).
-tennis_analytics:
+deuce:
   target: dev
   outputs:
     dev:

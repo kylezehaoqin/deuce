@@ -1,10 +1,10 @@
-"""`tennis` -- the Increment 0 command surface.
+"""`deuce` -- the command surface.
 
-    tennis init-db                 apply sql/*.sql (idempotent)
-    tennis download [SOURCE]       fetch Match Charting Project CSVs
-    tennis load [SOURCE]           validate + upsert into the raw schema
-    tennis status                  ingest funnel, row counts, rejects
-    tennis demo PLAYER             the end-to-end proof-of-life query
+    deuce init-db                 apply sql/*.sql (idempotent)
+    deuce download [SOURCE]       fetch Match Charting Project CSVs
+    deuce load [SOURCE]           validate + upsert into the raw schema
+    deuce status                  ingest funnel, row counts, rejects
+    deuce demo PLAYER             the end-to-end proof-of-life query
 
 In Increment 1 Dagster wraps these same functions as software-defined assets;
 the CLI stays as the manual/backfill entry point.
@@ -16,7 +16,7 @@ from typing import Annotated
 
 import typer
 
-from tennis_analytics import logging as tlog
+from deuce import logging as tlog
 
 app = typer.Typer(add_completion=False, help=__doc__)
 
@@ -33,7 +33,7 @@ def _main(
 @app.command("init-db")
 def init_db() -> None:
     """Create schemas, extensions, raw tables, and the observability tables."""
-    from tennis_analytics.db import apply_migrations
+    from deuce.db import apply_migrations
 
     for name in apply_migrations():
         typer.echo(f"applied {name}")
@@ -45,7 +45,7 @@ def download(
     force: Annotated[bool, typer.Option(help="Re-download even if the file exists.")] = False,
 ) -> None:
     """Fetch source CSVs into data/raw/."""
-    from tennis_analytics.ingest.loader import download as do_download
+    from deuce.ingest.loader import download as do_download
 
     for spec in _select(source):
         do_download(spec, force=force)
@@ -58,7 +58,7 @@ def load(
     validate: Annotated[bool, typer.Option(help="Run Pydantic shape validation.")] = True,
 ) -> None:
     """Download if needed, then validate and upsert into raw.*."""
-    from tennis_analytics.ingest.loader import load as do_load
+    from deuce.ingest.loader import load as do_load
 
     for spec in _select(source):
         for result in do_load(spec, validate=validate, limit=limit):
@@ -72,8 +72,8 @@ def load(
 @app.command()
 def status() -> None:
     """Row counts per raw table plus the last few ingest runs."""
-    from tennis_analytics.db import connect
-    from tennis_analytics.ingest import SOURCES
+    from deuce.db import connect
+    from deuce.ingest import SOURCES
 
     with connect() as conn:
         typer.secho("\ntable row counts", bold=True)
@@ -102,8 +102,8 @@ def demo(
     """Increment 0 proof-of-life: serve placement + direction entropy for one player."""
     from pathlib import Path
 
-    from tennis_analytics.config import REPO_ROOT
-    from tennis_analytics.db import connect
+    from deuce.config import REPO_ROOT
+    from deuce.db import connect
 
     query = (Path(REPO_ROOT) / "sql" / "queries" / "serve_direction_entropy.sql").read_text()
     with connect() as conn, conn.cursor() as cur:
@@ -121,7 +121,7 @@ def demo(
 
 
 def _select(source: str | None):
-    from tennis_analytics.ingest import SOURCES
+    from deuce.ingest import SOURCES
 
     if source is None:
         return list(SOURCES.values())

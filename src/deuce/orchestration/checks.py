@@ -25,9 +25,9 @@ from __future__ import annotations
 
 from dagster import AssetCheckResult, AssetCheckSeverity, asset_check
 
-from tennis_analytics.db import connect
-from tennis_analytics.ingest import SOURCES, SourceSpec
-from tennis_analytics.orchestration.ingest_assets import _asset_key
+from deuce.db import connect
+from deuce.ingest import SOURCES, SourceSpec
+from deuce.orchestration.ingest_assets import _asset_key
 
 # Below this many prior runs there is no baseline worth comparing against, and the
 # check reports PASS with an explanation rather than inventing a threshold.

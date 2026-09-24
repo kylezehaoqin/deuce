@@ -3,7 +3,7 @@
 > Never edit a migration that has already run somewhere.
 
 **Concept:** environment drift
-**Lives in:** `sql/`, `src/tennis_analytics/db.py` → `apply_migrations`
+**Lives in:** `sql/`, `src/deuce/db.py` → `apply_migrations`
 **Status:** settled
 
 ## What happened

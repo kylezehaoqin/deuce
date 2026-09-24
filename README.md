@@ -1,7 +1,10 @@
-# Tennis Analytics Agent
+# Deuce
 
 **Ask tactical tennis questions in plain English. Get answers grounded in
 shot-by-shot data, with the rows they came from.**
+
+*Deuce — the tied state where the next point decides everything. This project is
+about what players give away when it does.*
 
 > *"On second-serve points at 30–40, where does Alcaraz serve — and how
 > predictable is it?"*
@@ -126,7 +129,7 @@ sql/                      raw DDL + the Increment 0 demo query
   003_observability.sql     ingest_runs + error_records (dead letter)
   queries/                  hand-written SQL that predates the marts
 
-src/tennis_analytics/
+src/deuce/
   config.py                 settings, one source of truth
   db.py                     psycopg3 + idempotent migrations
   cli.py                    the `tennis` command

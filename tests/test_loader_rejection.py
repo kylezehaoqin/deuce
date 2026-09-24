@@ -7,8 +7,8 @@ individually plausible. Only the field count gives it away.
 
 from __future__ import annotations
 
-from tennis_analytics.ingest import loader
-from tennis_analytics.ingest.sources import MATCHES
+from deuce.ingest import loader
+from deuce.ingest.sources import MATCHES
 
 GOOD = {
     "match_id": "20241124-M-Davis_Cup_Finals-RR-A-B",

@@ -4,7 +4,7 @@
 > 3am, which is exactly when they'll need to.
 
 **Concept:** idempotency, staging tables, `ON CONFLICT`, the limits of upsert
-**Lives in:** `src/tennis_analytics/ingest/loader.py`
+**Lives in:** `src/deuce/ingest/loader.py`
 **Status:** settled
 
 ## What happened

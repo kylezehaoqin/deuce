@@ -4,7 +4,7 @@
 > the wrong columns. Only the arithmetic can see it.
 
 **Concept:** structural vs. semantic validation
-**Lives in:** `src/tennis_analytics/ingest/loader.py` → `_reject_reason`
+**Lives in:** `src/deuce/ingest/loader.py` → `_reject_reason`
 **Status:** settled
 
 ## What happened

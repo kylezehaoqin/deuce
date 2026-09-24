@@ -26,7 +26,7 @@ from collections.abc import Iterator
 from dagster import AssetExecutionContext
 from dagster_dbt import DbtCliResource, dbt_assets
 
-from tennis_analytics.orchestration.resources import dbt_project
+from deuce.orchestration.resources import dbt_project
 
 
 @dbt_assets(

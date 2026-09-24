@@ -26,10 +26,10 @@ from dagster import (
     define_asset_job,
 )
 
-from tennis_analytics.orchestration.checks import ingest_checks
-from tennis_analytics.orchestration.dbt_assets import tennis_dbt_assets
-from tennis_analytics.orchestration.ingest_assets import ingest_assets
-from tennis_analytics.orchestration.resources import dbt_resource
+from deuce.orchestration.checks import ingest_checks
+from deuce.orchestration.dbt_assets import tennis_dbt_assets
+from deuce.orchestration.ingest_assets import ingest_assets
+from deuce.orchestration.resources import dbt_resource
 
 # The unpartitioned sources plus every dbt model. The points source is excluded
 # because a partitioned asset cannot be materialised by an unpartitioned job --
