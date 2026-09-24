@@ -1,17 +1,18 @@
 # Deuce
 
-**Ask tactical tennis questions in plain English. Get answers grounded in
-shot-by-shot data, with the rows they came from.**
+**Tactical tennis questions, answered from shot-by-shot data — with the rows the
+answer came from.**
 
-*Deuce — the tied state where the next point decides everything. This project is
+*Deuce: the tied state where the next point decides everything. This project is
 about what players give away when it does.*
 
 > *"On second-serve points at 30–40, where does Alcaraz serve — and how
 > predictable is it?"*
 
-Box scores can tell you he won 68% of second-serve points. They cannot tell you
-that he goes to the body on break point and that it is readable. That gap — between
-*what happened* and *what the pattern was* — is what this project closes.
+A box score says he won 68% of second-serve points. It cannot say that he leans
+wide on the ad court, or that he nets 45% of his break-point faults and 40% of
+the rest. That gap — between *what happened* and *what the pattern was* — is
+what this closes.
 
 ---
 
@@ -19,61 +20,129 @@ that he goes to the body on break point and that it is readable. That gap — be
 
 | Increment | Ships | State |
 |---|---|---|
-| **0** | Repo, Postgres ingest, one real question answered end-to-end | 🟢 in progress |
-| **1** | dbt spine (staging → intermediate → marts) + Dagster + tests | 🟢 done |
-| **2** | LangGraph text-to-SQL agent; every answer cites its source rows | ⚪ |
-| **3** | Eval harness (measured accuracy) + pgvector semantic search + Langfuse tracing | ⚪ |
+| **0** | Repo, Postgres ingest, one question answered end-to-end | ✅ done |
+| **1** | dbt spine + Dagster orchestration + tests | ✅ done |
+| **2** | LangGraph text-to-SQL agent; every answer cites its source rows | ⚪ next |
+| **3** | Eval harness + pgvector similarity + Langfuse tracing | ⚪ |
 | **4** | MCP server exposing the analytics as tools | ⚪ |
 
-Built in public, one increment a week. Nothing above is claimed until it runs.
+**The warehouse is built; the agent is not.** Everything below was produced by
+SQL against these marts, not by an LLM. Nothing here is claimed until it runs —
+`dbt build` runs 14 models and 43 tests green; `pytest` 31.
+
+```
+ 11,819 matches   1,875,132 points   2,577,836 serves   296,286 games   1,739 players
+```
+
+---
+
+## What it found
+
+The point of a warehouse is the answers. These are real, and each is
+reproducible from a single query.
+
+### Momentum is a rally-length effect, not psychology
+
+*"After winning a long rally, do you win the next point more often?"* The naive
+query says yes. Hold the server constant — consecutive points inside the same
+game — and split by who won the previous point:
+
+```
+       control        |    previous point     |    n    | same player wins next
+----------------------+-----------------------+---------+-----------------------
+ returner won prev pt | after short pt (<=4)  | 320,823 |        0.3949
+ returner won prev pt | after LONG rally (9+) |  63,575 |        0.4046   +1.0pp
+ server won prev pt   | after short pt (<=4)  | 473,757 |        0.6299
+ server won prev pt   | after LONG rally (9+) |  78,681 |        0.6099   −2.0pp
+```
+
+**The halves move in opposite directions.** Momentum would help whoever just
+won. What's actually happening: a long rally predicts the next point is also
+contestable, and contestable points favour the returner. The effect people call
+momentum is rally length wearing a costume.
+
+### Players have serve tells, and they're individual
+
+Ad-court first serves, break point vs. everything else:
+
+```
+ Medvedev   body 4.5%  ← effectively a two-option server
+ Djokovic   entropy 0.840 → 0.859 on break point   (harder to read)
+ Federer    entropy 0.782 → 0.765                  (easier to read)
+```
+
+There is **no tour-wide tendency** — predictability under pressure is a player
+property, which makes it a scouting feature rather than a rule.
+
+### How a player misses is a tell too
+
+Fault direction is one character in the notation, and nobody publishes it sliced
+by pressure:
+
+```
+ first-serve faults, ad court    net    deep   wide   first-serve %
+ Alcaraz    break point         0.449  0.313  0.187      0.629
+ Alcaraz    neutral             0.398  0.392  0.172      0.661
+ Medvedev   break point         0.371  0.379  0.171      0.603
+ Medvedev   neutral             0.408  0.404  0.140      0.623
+```
+
+Alcaraz nets **more** on break point and his first-serve percentage drops —
+decelerating. Medvedev nets **less** — swinging through it.
+
+### Sanity: the numbers match the real tours
+
+Hold rate **80.2%** on the men's side, **66.5%** on the women's. Both are the
+actual figures. That check is worth more than "the code ran."
+
+More in [`lessons/hypotheses-tennis.md`](lessons/hypotheses-tennis.md), including
+the ones that **didn't** survive — and
+[`docs/data-trust.md`](docs/data-trust.md) for what each number is worth.
 
 ---
 
 ## The two layers
 
-This is one repo doing two jobs, stacked.
+**Layer 1 — the data engineering spine.** The Match Charting Project publishes
+shot-by-shot notation for thousands of matches, as CSVs where an entire rally is
+one opaque string (`4b37y1r3n#`). Turning that into a tested, orchestrated,
+queryable warehouse is most of the work.
 
-**Layer 1 — the data engineering spine.** Jeff Sackmann's Match Charting Project
-publishes shot-by-shot notation for thousands of professional matches: every serve
-placement, every shot type, every direction, every error. It arrives as CSVs where
-an entire rally is one opaque string (`4b37y1r3n#`). Turning that into a queryable
-warehouse — ingest → raw → staging → marts, with tests, lineage and a catalog — is
-most of the work and all of the foundation.
-
-**Layer 2 — the agent.** A LangGraph agent that turns an English question into SQL
-against those marts, routes the questions SQL *can't* answer to semantic search over
-match notes, and refuses the ones the data doesn't support. Every answer carries its
-sample size and its source matches. An eval harness scores it against a fixed
-question set so "it got better" is a measurement, not a feeling.
-
-### Architecture
+**Layer 2 — the agent.** A LangGraph agent turning English into SQL against
+those marts, disclosing its sample size and confidence tier, and refusing what
+the data can't support. An eval harness scores it so "it got better" is a
+measurement.
 
 ```mermaid
 flowchart LR
-  A["Match Charting Project<br/>CSVs"] -->|tennis load| B["raw.*<br/>(all TEXT, append-only)"]
-  B -->|Pydantic shape check| C{"reject rate<br/>&lt; 5%?"}
-  C -->|no| X["raw.error_records<br/>+ abort, load nothing"]
-  C -->|yes| D["dbt staging<br/>cast, rename, 1:1"]
-  D --> E["dbt intermediate<br/>notation → one row per shot"]
-  E --> F["dbt marts<br/>fct_shots, mart_serve_patterns…"]
-  F --> G["LangGraph agent<br/>text-to-SQL"]
-  F --> H["dbt docs<br/>data catalog"]
-  I["match notes"] --> J["pgvector<br/>semantic search"]
-  J --> G
-  G --> K["grounded answer<br/>+ cited rows"]
+  A["Match Charting Project<br/>CSVs"] -->|deuce load| B["raw.*<br/>all TEXT, append-only"]
+  B -->|Pydantic + field-count check| C{"reject rate<br/>&lt; 5%?"}
+  C -->|no| X["raw.error_records<br/>abort, load nothing"]
+  C -->|yes| D["staging<br/>cast, rename, 1:1"]
+  D --> E["intermediate<br/>rally length, court side,<br/>serve direction"]
+  E --> F["fct_points"]
+  F --> G["fct_serves"]
+  F --> H["fct_games"]
+  G --> I["mart_serve_patterns"]
+  J["dim_players · dim_charters"] --> K["mart_data_coverage"]
+  I --> L(["LangGraph agent<br/>— Increment 2 —"])
+  K --> L
+  M["Sackmann's own<br/>aggregations"] -.->|oracle: diffed in tests| E
+  style L stroke-dasharray: 5 5
 ```
+
+Dagster orchestrates ingest and `dbt build` as software-defined assets, with
+date-partitioned backfill for the points files.
 
 ### The signature metric
 
-**`serve_direction_entropy`** — an information-theory measure of how unpredictable
-a player's serve is. `-Σ p·ln(p)` over wide/body/T, normalised to `[0,1]`.
+**`serve_direction_entropy`** — `-Σ p·ln(p)` over wide/body/T, normalised to
+`[0,1]`. `1.0` is a perfectly even split: unreadable. `0.0` is every serve to
+the same spot.
 
-`1.0` means perfectly balanced and unreadable. `0.0` means every serve to the same
-spot. Slice it by pressure and you get a scouting report: *this player has an
-entropy of 0.94 on 30-0 and 0.41 on break point.* That is a thing you can take onto
-a court.
-
-It ships in Increment 0 — see `sql/queries/serve_direction_entropy.sql`.
+Precomputed in `mart_serve_patterns` rather than left to the agent, because
+entropy takes three passes and a zero-guard, and that's exactly the kind of SQL
+an LLM gets subtly wrong.
 
 ---
 
@@ -82,153 +151,146 @@ It ships in Increment 0 — see `sql/queries/serve_direction_entropy.sql`.
 Requires Docker and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-make setup      # venv on Python 3.12 + deps (dbt/dagster don't support 3.13 yet)
-make up         # Postgres 16 + pgvector on :5433
-make db-init    # schemas, extensions, raw tables
+make setup          # venv on Python 3.12 (dbt/dagster don't support 3.13 yet)
+make up             # Postgres 16 + pgvector on :5433
+make db-init        # schemas, extensions, raw tables
 
-make ingest     # matches + serve-direction stats (~30s)
-make status     # row counts, ingest funnel, dead-letter count
-
+make ingest         # matches + serve stats (~30s)
 make demo PLAYER="Carlos Alcaraz"
 ```
 
 ```
-        court_side           direction              serves               share  serve_direction_entropy     matches_charted
-             deuce                wide                3595              0.3871              0.9800                 221
-             deuce                   T                3487              0.3754              0.9800                 221
-             deuce                body                2206              0.2375              0.9800                 221
-                ad                wide                4424              0.5289              0.9225                 221
-                ad                   T                2243              0.2682              0.9225                 221
-                ad                body                1697              0.2029              0.9225                 221
+ court_side  direction  serves   share   serve_direction_entropy  matches_charted
+ deuce       wide        3595   0.3871          0.9800                  221
+ deuce       T           3487   0.3754          0.9800                  221
+ deuce       body        2206   0.2375          0.9800                  221
+ ad          wide        4424   0.5289          0.9225                  221
+ ad          T           2243   0.2682          0.9225                  221
+ ad          body        1697   0.2029          0.9225                  221
 ```
 
-Read that as a scouting note: on the deuce court Alcaraz is close to unreadable
-(0.98 — an almost even three-way split). On the ad court he tips his hand: **53%
-of his serves go wide**, and entropy drops to 0.92. If you're returning in the ad
-court, you cheat left. Across 221 charted matches.
+On the deuce court Alcaraz is near-unreadable — 0.98, an almost even three-way
+split. On the ad court he tips his hand: **53% wide**, entropy 0.92. If you're
+returning in the ad court, you cheat left.
 
-That is the shape of every answer this project is built to produce.
-
-Then the shot-level data, and the ground truth to check your parsing against:
+Then the full warehouse:
 
 ```bash
-make ingest-points    # 178 MB, ~1.9M charted points, ~60s
-make ingest-oracles   # Sackmann's own aggregations -- see 'Design notes'
-make dbt-build        # staging + intermediate + marts, 56 tests
-make dagster          # asset graph + run history at localhost:3000
+make ingest-points    # 178 MB, ~1.9M points, ~60s
+make ingest-oracles   # Sackmann's aggregations — ground truth for the parser
+make dbt-build        # 14 models, 43 tests
+make dagster          # asset graph and run history at :3000
 ```
 
 ---
 
-## What's in here
+## Layout
 
 ```
-sql/                      raw DDL + the Increment 0 demo query
-  001_schemas.sql           extensions (pgvector, pg_trgm), schemas
-  002_raw_tables.sql        raw landing tables — all TEXT, by design
-  003_observability.sql     ingest_runs + error_records (dead letter)
-  queries/                  hand-written SQL that predates the marts
-
 src/deuce/
-  config.py                 settings, one source of truth
-  db.py                     psycopg3 + idempotent migrations
-  cli.py                    the `tennis` command
-  ingest/
-    sources.py              one SourceSpec per upstream CSV
-    schemas.py              Pydantic shape validation
-    loader.py               download → validate → stage → upsert
-  agent/
-    prompts.py              routing + grounding prompt (Increment 2)
+  cli.py                  the `deuce` command
+  ingest/                 SourceSpec per CSV · Pydantic validation · loader
+  orchestration/          Dagster assets, schedules, asset checks
+  agent/prompts.py        routing + grounding prompt        (Increment 2)
 
-dbt/
-  models/staging/           1:1 with raw: cast, rename, nothing else
-  models/intermediate/      business logic, joins, the notation parser
-  models/marts/             what the agent queries
+dbt/models/
+  staging/                1:1 with raw — cast, rename, nothing else
+  intermediate/           rally length, court side, charting flags
+  marts/                  fct_points · fct_serves · fct_games
+                          dim_players · dim_charters
+                          mart_serve_patterns · mart_data_coverage
+                          fct_shots (stub — needs the tokenizer)
+dbt/tests/                oracle agreement · fact-vs-aggregate drift · index existence
 
-docs/mcp-notation.md      the shot-notation codebook + measured accuracy
-docs/marts.md             what the warehouse exposes, at what grain, and why
-docs/schema.md            live schema, layer diagrams, and the relational-theory
-                          reasoning (why raw breaks 1NF and marts break 3NF)
-lessons/                  why the repo is built this way: decisions, trade-offs,
-                          a hypothesis log and an error log
-questions.yml             16 questions: demo script, mart spec, and eval set
+sql/
+  00N_*.sql               forward-only migrations
+  investigations/         measurement harnesses; one CTE is the hypothesis
+
+docs/
+  data-trust.md           what every fact is worth, and what it isn't
+  mcp-notation.md         the shot-notation codebook + measured accuracy
+  marts.md                the grain ladder and the mart map
+  schema.md               live schema, ER diagrams, normalisation reasoning
+lessons/                  why it's built this way — plus a hypothesis log and
+                          an error log, including the refuted and the wrong
+notes/                    concept reference and writing backlog
+questions.yml             16 questions: demo script, mart spec, eval set
 ```
 
 ---
 
 ## Design notes
 
-A few choices that are load-bearing, and why.
+**The raw layer is all `TEXT`.** Its job is fidelity, not correctness. When
+upstream shipped a row with two fields missing, it *loaded* — and the breakage
+surfaced in dbt staging with the offending value named, instead of dying
+anonymously mid-`COPY`. Marts are rebuildable from raw; raw is the rollback
+point.
 
-**The raw layer is all `TEXT`.** Its job is fidelity, not correctness. If upstream
-starts writing `N/A` into a numeric field, ingest keeps working and the breakage
-surfaces in dbt staging — visible, tested, and cheap to fix — instead of silently
-eating rows at load time. Marts are always rebuildable from raw; raw is the
-rollback point.
+**Field counts are checked before field values.** 11 upstream rows are missing
+both player-name fields, which shifts every value one column left — handedness
+lands in `Player 1`, the charter's name lands in `Best of`. Every value is
+individually plausible, so no per-field validator can see it. Only the
+arithmetic can.
 
-**Ingest is idempotent and transactional.** Rows stream into a temp table via
-`COPY`, get checked, and land with `INSERT … ON CONFLICT DO UPDATE` on the natural
-key. Run it twice, get the same table. If more than 5% of rows fail validation the
-run aborts having written *nothing* — a schema change upstream shouldn't half-load
-a file.
-
-**Bad rows are kept, not dropped.** `raw.error_records` holds the payload and the
-reason. A rejection rate is a metric you can trend; a rejected row is something you
-can replay after fixing the parser.
-
-**Field counts are checked before field values.** 11 rows in the upstream matches
-files are missing both player-name fields, which shifts every remaining value one
-column left — a player's *handedness* lands in `Player 1`, the charter's name lands
-in `Best of`. Every one of those values is individually plausible, so no per-field
-validator can see it; only the arithmetic can. They go to the dead-letter table with
-the reason `columns are shifted`.
-
-**pgvector lives in the same Postgres as the warehouse.** One fewer moving part,
-and semantic search results can `JOIN` straight back onto the marts — a hit on a
-match note can be enriched with that match's actual numbers in the same query.
-(Qdrant is the swap-in if this ever needed to scale past one box.)
+**Ingest is idempotent and has a circuit breaker.** Rows stream through a temp
+table and land with `ON CONFLICT DO UPDATE` on the natural key. The rejection
+rate is checked *before* anything reaches the real table, so a bad file writes
+nothing rather than half-loading.
 
 **The parser is validated against an independent implementation.** Sackmann
-publishes his own aggregations of the same notation strings, which makes them ground
-truth for our parsing — no labelling required. Rally length currently agrees with
-his numbers on **90.0%** of 2020s matches, 82.5% of 2010s and 55.2% of pre-2010,
-and `dbt build` fails if any tier regresses below its baseline.
+publishes his own aggregations of the same strings, which makes them ground
+truth — no labelling required. Rally length agrees on **90.0%** of 2020s
+matches, 82.5% of 2010s, 55.2% of pre-2010, and `dbt build` fails if any tier
+regresses below its baseline.
 
-That spread is itself the finding: **charting conventions drifted over the project's
-history**, so every parsed row carries a `parse_confidence` column and the agent is
-expected to disclose it rather than compare across eras silently.
+That spread is itself the finding. **Charting conventions drifted**, so every
+parsed row carries `parse_confidence` and the agent must disclose it rather than
+compare across eras silently.
+
+**Counting questions don't need a parser; identity questions do.** Rally length
+is one `regexp_replace` and it ties a 743-line typed parser at 90.0% vs 89.9%.
+Anything naming a *specific* shot needs ordered records — shots alternate, so
+position is the only attribution, and crosscourt-vs-down-the-line depends on
+where the previous ball went. That's why `fct_shots` is at shot grain, and why
+it's still a stub.
+
+**Indexes are measured, not guessed.** A typical agent query seq-scanned 706 MB
+for 7 rows. The most selective *column* gave 1.3×; a partial index on a *less*
+selective boolean gave 200×, because heap fetches dominate. They live in model
+config and a test asserts they exist — an index is state dbt doesn't consider
+part of a model's contract.
 
 ---
 
 ## The questions
 
-`questions.yml` holds 16 tennis questions. Each one does triple duty: a demo prompt,
-a spec for a dbt mart, and an eval case with reference SQL and grounding
-requirements. A sample:
+[`questions.yml`](questions.yml) holds 16, each doing triple duty: demo prompt,
+mart spec, and eval case with reference SQL and grounding requirements.
 
-- Where does *[player]* serve on second-serve points at 30–40, and how predictable is it?
-- After a wide serve on the deuce court, how often is the next shot a forehand into
-  the open court — and does it win the point?
+- Where does *[player]* serve on second-serve points at 30–40, and how
+  predictable is it?
 - Each player's win rate by rally length (0–4, 5–8, 9+ shots).
-- How often does *[player]* go down-the-line off the backhand — and is it +EV, or a
-  highlight-reel trap with as many errors as winners?
-- After winning a long rally, does a player win the next point more often, or is
-  momentum a myth?
-- If I'm about to play *[player]*: their three most predictable patterns, and where
-  they're exploitable.
+- How often does *[player]* go down-the-line off the backhand — and is it +EV,
+  or a highlight-reel trap with as many errors as winners?
+- After winning a long rally, does a player win the next point more often — or
+  is momentum a myth?
+- If I'm about to play *[player]*: their three most predictable patterns, and
+  where they're exploitable.
 
 ---
 
 ## Data
 
 Match data from the [Match Charting Project](https://github.com/JeffSackmann/tennis_MatchChartingProject)
-by Jeff Sackmann and hundreds of volunteer charters, licensed **CC BY-NC-SA 4.0**.
-See [ATTRIBUTION.md](ATTRIBUTION.md). Code in this repo is MIT.
+by Jeff Sackmann and hundreds of volunteer charters, **CC BY-NC-SA 4.0** — see
+[ATTRIBUTION.md](ATTRIBUTION.md). Code is MIT.
 
-No match data is committed here — `make ingest` fetches it from the source.
+No match data is committed here; `make ingest` fetches it from the source.
 
 ---
 
 ## Stack
 
-PostgreSQL 16 · pgvector · dbt · Dagster · LangGraph · Langfuse · Ollama · psycopg3 · Pydantic
+PostgreSQL 16 · pgvector · dbt · Dagster · psycopg3 · Pydantic · Typer
+· LangGraph, Langfuse, Ollama *(Increment 2+)*
