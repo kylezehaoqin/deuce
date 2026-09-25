@@ -306,3 +306,64 @@ models:
           their completeness rates before trusting a direction-based claim.
       - name: points_uncharted
         description: Points whose outcome is known but whose rally was not recorded.
+
+  - name: mart_rally_shape
+    description: >
+      Win rate by rally-length bucket, per player, with the slope precomputed.
+      Reference data for T1 and questions.yml #3/#4. The LEVEL is mostly opponent
+      quality -- elite players all sit near .53 -- so only the within-player slope
+      is interpretable, and it is computed here in tested SQL precisely because an
+      LLM handed bucket win rates will compare levels across players instead.
+      Rates cover high+medium parse confidence only; rally length is parsed and is
+      ~90% accurate on 2020s matches vs ~55% pre-2010.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [player_name, surface, shape_grain, rally_bucket]
+    columns:
+      - name: player_name
+        description: Joins to dim_players.player_name.
+        data_tests: [not_null]
+      - name: shape_grain
+        description: >
+          'player' (all surfaces pooled) or 'player_surface'. From GROUPING SETS,
+          so a NULL surface means all surfaces, never unknown.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['player', 'player_surface']
+      - name: rally_bucket
+        description: "Sackmann's buckets: 1-3, 4-6, 7-9, 10+ shots."
+        data_tests: [not_null]
+      - name: points
+        description: >
+          Points in this bucket at high or medium parse confidence -- the
+          denominator for win_rate. Under ~20 the rate is not worth quoting.
+      - name: points_low_confidence
+        description: >
+          Points excluded from the rates because the parse is pre-2010. Exposed so
+          the omission is visible rather than silent.
+      - name: win_rate
+        description: Share of these points the player won.
+      - name: share_of_points
+        description: >
+          This bucket's share of the player's points. A first-striker's mass sits
+          in 1-3; a grinder's is flatter. Independent of win_rate and often the
+          clearer style signal.
+      - name: win_rate_slope
+        description: >
+          regr_slope(win_rate, bucket_ordinal) over the player's four buckets.
+          NEGATIVE = wins more on short points (first-striker). POSITIVE = wins
+          more on long ones (grinder). Read this, not the individual win rates,
+          when comparing players. ALWAYS read it alongside slope_r2.
+      - name: slope_r2
+        description: >
+          Goodness of fit for that slope. LOW R2 MEANS THE SLOPE IS MEANINGLESS --
+          the player's pattern is not monotone and a line does not describe it.
+          Federer is the cautionary case: slope -0.004 with r2 0.086, because his
+          buckets run .5325 / .5518 / .5045 / .5335. Do not report a slope with r2
+          below ~0.3 as a style claim.
+      - name: buckets_with_20_plus
+        description: >
+          How many of the four buckets have >=20 points. Below 4, the slope is
+          fitted on thin cells.

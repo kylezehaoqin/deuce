@@ -146,6 +146,10 @@ across buckets.
 **Why:** T1 (first-striker vs grinder). The slope is the interpretable part; the
 level is opponent quality. Precomputing the slope stops the agent from comparing
 levels across players, which is the mistake it will otherwise make confidently.
+**Status:** **BUILT.** Grain `(player, surface, rally_bucket)` with a pooled
+rollup via `GROUPING SETS`. Slope via `regr_slope` with `regr_r2` alongside --
+the r² is what revealed that T1's Federer claim was an artifact of coarser
+buckets (slope −0.004, r² 0.086).
 
 ### `mart_pressure_index`
 **Grain:** `(match, point)` — an extension of the point grain.

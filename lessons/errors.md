@@ -26,6 +26,7 @@ recurs.
 | [E14](#e14) | Read group means as if they were the whole variance | statistics | Compare between-group spread to within-group spread, always |
 | [E15](#e15) | Invented a physical reason my own data refuted | explanation | An unexplained rule beats a plausible wrong one |
 | [E16](#e16) | Judged code by a metadata string, not by its behaviour | provenance | Test the artifact; an author field is not evidence |
+| [E17](#e17) | Joined on a GROUPING SETS column with `=`; NULL never matched | three-valued logic | A nullable join key needs `is not distinct from` |
 
 ---
 
@@ -389,3 +390,30 @@ on provenance. A compiled binary inside a dbt lineage is a black box in the DAG,
 and "every output traceable to source" is the story this repo sells. Using the
 parser as an oracle for a Python or SQL tokenizer keeps that intact and still saves
 writing the state machine.
+
+## E17
+**Symptom:** `mart_rally_shape` built successfully and every `win_rate_slope` was
+NULL. No error, no failing test.
+
+**Cause:** the slope is computed in a separate CTE (because `regr_slope` aggregates
+over the bucket *rows*) and joined back on `(player_name, surface,
+_surface_rolled)`. `GROUPING SETS` sets `surface` to NULL on the rolled-up rows,
+and **`NULL = NULL` is NULL, not true** — so for exactly the pooled rows, the
+`LEFT JOIN` matched nothing and quietly produced NULLs.
+
+**Fix:** `is not distinct from` instead of `=` — Postgres's NULL-safe equality.
+
+```sql
+and r.surface is not distinct from s.surface   -- not  r.surface = s.surface
+```
+
+**Rule:** the moment a join key can be NULL, `=` is wrong. `GROUPING SETS`,
+`ROLLUP`, `CUBE` and outer joins all manufacture NULLs in columns that are
+otherwise populated, so any key downstream of them needs the null-safe operator.
+
+**Why it's insidious:** a `LEFT JOIN` that matches nothing looks identical to a
+`LEFT JOIN` that correctly found no match. The failure is a column of NULLs, which
+is also what "no data yet" looks like. Third member of the family with E6 (`CASE
+… ELSE` swallowing NULL) and the tiebreak bug: **Postgres's three-valued logic
+fails quietly by design**, so any NULL-capable column in a predicate deserves a
+deliberate decision rather than a default operator.

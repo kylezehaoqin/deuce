@@ -77,6 +77,35 @@ longest average rally (5.43) but a non-monotonic slope (.523 → .521 → .540).
 Being a long-rally player and being a *good* long-rally player are different
 things, and this two-axis framing (rally length vs. slope) is the better model.
 
+**UPDATE — Federer's half of this is bucketing-dependent.** `mart_rally_shape`
+recomputes the slope on Sackmann's four buckets (1-3 / 4-6 / 7-9 / 10+) rather than
+the 1-4 / 5-8 / 9+ used above, and fits it by least squares with a goodness-of-fit:
+
+```
+ Roger Federer   .5325  .5518  .5045  .5335   slope -0.0044   r2 0.086
+ Rafael Nadal    .5141  .5562  .5547  .5495   slope +0.0105   r2 0.463
+ Iga Swiatek                                  slope +0.0175   r2 0.999
+ Hubert Hurkacz                               slope -0.0228   r2 0.603
+```
+
+Federer's pattern is **not monotone** on four buckets, and r² of 0.086 says a line
+explains essentially none of it. The "only player whose win rate declines" claim
+came from three coarser buckets that smoothed the 7-9 dip away.
+
+**Nadal's half survives** (positive slope, r² 0.46), and the slope ranks the wider
+field sensibly — Hurkacz, a serve-dominant player, is the most negative; Swiatek is
+near-perfectly monotone the other way.
+
+**Revised verdict: ⚠️ half supported.** Nadal is a grinder by this measure.
+Federer is *not* demonstrably a declining-with-length player; he is a player whose
+mass sits in short rallies (61% of his points in 1-3, the highest in the group),
+which is a claim about `share_of_points`, not about win rate.
+
+**The lesson is about bucket boundaries.** Choosing three buckets instead of four
+changed a finding. Any claim that depends on a discretisation should be re-run under
+a different one before it is reported — and reporting the fit alongside the slope
+is what made this visible at all.
+
 ## T2
 **Claim:** momentum is real — winning a hard-fought point makes you likelier to
 win the next one.
