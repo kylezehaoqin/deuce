@@ -29,7 +29,7 @@
 --
 --   start                    +19.55 avg gap   1.19% exact
 --   H10b  let fix            +16.89
---   H10a  net unforced only   +2.34            5.69% exact, median +1
+--   H10a  net unforced only   +2.34            5.69% exact, median +2
 --
 --   Residual is CHARTER IDIOSYNCRASY, not a missing rule. Per-charter mean gap
 --   spans -15.48 (Angel Moreno) to +12.14 (Isaac) while within-charter spread is
@@ -121,13 +121,15 @@ WITH prepared AS (
 
 candidate AS (
 
-    -- SETTLED. Two corrections took the gap from +19.55 to a median of +1.
+    -- SETTLED. Two corrections took the gap from +19.55 to a median of +2
+    -- (all eras: mean 2.70, p25 -3, p75 +8).
     --
     --   1. The let fix, in `prepared` above.
     --   2. Subtract the point-ending shot ONLY when it was an unforced error
-    --      into the NET. Physically: a ball that hit the net never crossed the
-    --      opponent's baseline, so it has no direction to record. A ball that
-    --      went wide or long did cross it, and Sackmann counts those.
+    --      into the NET. WHY is unknown -- do not invent a reason. The obvious
+    --      physical story ("a netted ball never crossed the baseline") is
+    --      refuted here: forced net errors carry a direction 171,427 times and
+    --      ARE counted. Empirically solid rule, unexplained mechanism.
     --
     -- Rejected alternatives, each measured (avg gap per match):
     --      all unforced errors          -19.65   over-corrects 8x

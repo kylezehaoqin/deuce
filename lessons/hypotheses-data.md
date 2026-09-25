@@ -175,14 +175,19 @@ same convention as rally length (H6).
  net unforced errors only       +2.34   <-- kept
 ```
 
-**Verdict: ⚠️ confirmed, but far narrower than stated.** Only unforced errors
-**into the net** are excluded. The physical reading is exact: a ball into the net
-never crossed the opponent's baseline, so it has no direction. Wide and long balls
-did cross it and are counted.
+**Verdict: ⚠️ confirmed, but far narrower than stated, and the mechanism is
+unknown.** Only unforced errors **into the net** are excluded.
 
-Combined with H10b's let fix, per-match gap went +19.55 → **+2.34, median +1**.
-The remainder is charter idiosyncrasy (−15.48 to +12.14 per-charter mean, within-
-charter sd ≈ 7–8), not a further rule. → lesson 005.
+I first explained this physically — a ball into the net never crossed the
+opponent's baseline, so it has no direction. **That explanation is refuted by the
+same dataset:** forced net errors carry a direction 171,427 times (vs 198,229
+unforced), and we count those, matching him. A physical rule would exclude both.
+The rule holds; the reason is open.
+
+Combined with H10b's let fix, per-match gap went +19.55 → **mean 2.70, median 2**
+(p25 −3, p75 +8, 11,782 matches). Charter identity explains **23.7%** of the
+residual variance (total 111.6; within-charter 86.4, between-charter 26.5) — a real
+contributor, not the explanation. The other 77% is unexplained. → lesson 005.
 
 **Method note worth keeping:** the first three rounds guessed at *patterns*. The
 round that worked started from a **diagnostic** — grouping on `left(rally, 1)`,

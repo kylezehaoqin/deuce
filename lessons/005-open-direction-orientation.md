@@ -121,7 +121,7 @@ evidence against H10c, and it cost nothing to compute.
 ## Resolved — and the residual turned out to be people
 
 Two corrections, both measured, took the per-match gap from **+19.55 to a median
-of +1**:
+of +2** (all eras: mean 2.70, p25 −3, p75 +8, on 11,782 matches):
 
 ```
  start                                    +19.55 avg gap   1.19% exact
@@ -137,9 +137,21 @@ Found by grouping on `left(rally, 1)`, not by re-reading the regex. **When a reg
 
 **H10a — but only into the net.** Sackmann excludes the point-ending shot, as in
 rally length (lesson 004) — but only when it was an **unforced error into the
-net**. That is physically exactly right: a ball that hit the net never crossed the
-opponent's baseline, so there is no direction to record. A ball that went wide or
-long did cross it, and he counts those.
+net**.
+
+**I do not know why**, and my first explanation was wrong. I wrote that a ball
+into the net never crossed the opponent's baseline so it has no direction to
+record. That is a nice story and the data contradicts it: **forced** net errors
+carry a direction 171,427 times, against 198,229 unforced — comparable
+frequencies — and those we count, matching him. If the physical argument held,
+forced net errors would be excluded too.
+
+So the rule is empirically solid and the mechanism is unexplained. Recording it
+that way, rather than keeping a plausible rationalisation, is the honest version:
+a convention with an invented reason is harder to revise later than one openly
+marked unknown. Candidates worth testing if it ever matters — a quirk of his
+aggregation script, or a distinction in the source spreadsheet's macros that the
+Instructions tab does not describe.
 
 The rejected alternatives are the evidence:
 
@@ -150,7 +162,7 @@ The rejected alternatives are the evidence:
 | + shank / unknown-error | +2.32 (indistinguishable) |
 | **net unforced only** | **+2.34** |
 
-**The residual is charter idiosyncrasy, not a missing rule.** Per-charter mean gap:
+**Charter identity explains about a quarter of the residual.** Per-charter mean gap:
 
 ```
  Angel Moreno   104 matches   -15.48   sd 7.42
@@ -160,11 +172,25 @@ The rejected alternatives are the evidence:
  Isaac          837          +12.14    sd 8.28
 ```
 
-Between-charter means span 28 shots; within-charter spread is a near-constant
-sd ≈ 7–8. The highest-volume charter sits at +1.41. So the rule is right and
-different volunteers apply the notation slightly differently — which is precisely
-what `dim_charters` exists to measure. A thing built to document a nuisance ended
-up explaining a three-session mystery.
+Between-charter means span 28 shots and the highest-volume charter sits at +1.41,
+which is what made "it's the charters" tempting. But a variance decomposition says
+otherwise:
+
+```
+ total variance of gap      111.6
+ within-charter             86.4   (77%)
+ between-charter             26.5   (24%)
+```
+
+**Charter identity accounts for 23.7% of the variance.** Three quarters of the
+spread is between matches charted by the *same person*. So charters are a real
+contributor and nowhere near the whole story — the remaining 77% is unexplained,
+and could be per-match ambiguity in the notation, our own edge cases, or
+inconsistency within a single charter over time.
+
+I originally wrote "the residual **is** charter idiosyncrasy." That was reading a
+between-group difference as though it were the whole variance — the mistake is
+comparing group means and never computing the within-group spread they sit in.
 
 Two corroborating signals that this is noise and not a rule:
 

@@ -228,13 +228,12 @@ Kyle's, in priority order:
   tokenizer first (lesson 009); decide its home (Python in `ingest/`, SQL in
   dbt, or the existing Rust parser as an oracle for one of those). Days, not
   hours. Unblocks the tactical direction mapping, serve+1, T6, T7.
-- **Three review corrections to lesson 005**, raised and not yet applied:
-  the median is 2 not 1 (all eras: mean 2.70, median 2, p25 -3, p75 +8);
-  "charter idiosyncrasy" is 23% of residual variance, not the residual
-  (between-charter 25.2 of 111.6 total, within-charter 86.4); and the physical
-  rationale for the net-unforced-error rule contradicts the measured finding
-  that *forced* net errors ARE counted. The rule is solid, the stated reason
-  is not -- better to say the mechanism is unknown.
+- ~~Three review corrections to lesson 005~~ -- **applied**, and logged as my
+  errors rather than edits: median is 2 not 1 (all eras mean 2.70, p25 -3,
+  p75 +8); charter identity explains **23.7%** of residual variance, not the
+  residual (total 111.6, within-charter 86.4, between-charter 26.5) -- errors
+  E14; and the physical rationale is refuted by forced net errors being counted
+  171,427 times, so the mechanism is now recorded as **unknown** -- errors E15.
 
 Mine, queued:
 

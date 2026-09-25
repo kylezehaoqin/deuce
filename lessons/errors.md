@@ -23,6 +23,8 @@ recurs.
 | [E11](#e11) | Renaming a dbt model left a 474 MB orphan | tool boundaries | A declarative tool only owns what you still declare |
 | [E12](#e12) | Guessed which column to index; wrong by 150x | performance intuition | Heap fetches cost, not lookup selectivity |
 | [E13](#e13) | `from __future__ import annotations` broke Dagster | runtime introspection | A stringified annotation is invisible to code that reads types at runtime |
+| [E14](#e14) | Read group means as if they were the whole variance | statistics | Compare between-group spread to within-group spread, always |
+| [E15](#e15) | Invented a physical reason my own data refuted | explanation | An unexplained rule beats a plausible wrong one |
 
 ---
 
@@ -296,3 +298,59 @@ This is the same class as E11: a tool inspecting state you assumed was declarati
 and inert. E11 was dbt not owning an index; this is Dagster reading a type hint as
 data. **Whenever a framework derives behaviour from your source text rather than
 your values, the text's representation becomes part of the contract.**
+
+## E14
+**Claim I committed:** "the residual **is** charter idiosyncrasy."
+
+**What I had:** per-charter mean gaps spanning −15.48 to +12.14 — a 28-shot spread
+across volunteers, which looked decisive.
+
+**What I never computed:** the spread *within* each charter.
+
+```
+ total variance of gap   111.6
+ within-charter           86.4   (77%)
+ between-charter          26.5   (24%)
+```
+
+Charter identity explains **23.7%**. Three quarters of the variation is between
+matches charted by the same person.
+
+**Cause:** I compared group means, saw a large range, and concluded the grouping
+variable explained the data. But a between-group difference only matters *relative
+to* the within-group noise it sits in — that ratio is the entire content of an
+F-test, and I skipped it because the means told a satisfying story.
+
+**Rule:** whenever a grouping variable looks like it explains a pattern, decompose
+the variance before saying so. Group means are a hypothesis; the decomposition is
+the test. One `var_samp` per group and a weighted sum would have caught this in a
+single query.
+
+**Why it mattered here:** the wrong version closed an investigation. "It's the
+charters" reads as solved; "charters explain a quarter, 77% is unexplained" is
+plainly still open.
+
+## E15
+**Claim I committed:** Sackmann excludes net unforced errors because "a ball that
+hit the net never crossed the opponent's baseline, so it has no direction to
+record."
+
+**What the same dataset says:** **forced** net errors carry a direction 171,427
+times, against 198,229 unforced — and those we *count*, matching his numbers. If
+the physical argument held, forced net errors would be excluded too.
+
+**Cause:** the rule was found empirically, by testing four candidate subtractions
+and keeping the one that landed nearest zero. That is sound. Then I attached a
+physical story to it, and the story was so tidy I never checked it against the
+adjacent case sitting in the same measurement — the one I had *already run*, which
+was how I knew forced net errors were counted.
+
+**Rule:** an empirically-derived rule and an explanation for it are two separate
+claims needing two separate tests. Deriving the first does not license the second.
+Where the mechanism is unknown, **write "unknown"** — a rule marked unexplained
+stays open to revision, while a rule with an invented reason gets defended.
+
+The interview version of this is short: *"I know the rule, I measured it, and I
+can't tell you why — here's what I ruled out."* That is a stronger answer than a
+confident wrong mechanism, and an interviewer who knows the domain will find the
+contradiction in the confident version.
