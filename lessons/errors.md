@@ -25,6 +25,7 @@ recurs.
 | [E13](#e13) | `from __future__ import annotations` broke Dagster | runtime introspection | A stringified annotation is invisible to code that reads types at runtime |
 | [E14](#e14) | Read group means as if they were the whole variance | statistics | Compare between-group spread to within-group spread, always |
 | [E15](#e15) | Invented a physical reason my own data refuted | explanation | An unexplained rule beats a plausible wrong one |
+| [E16](#e16) | Judged code by a metadata string, not by its behaviour | provenance | Test the artifact; an author field is not evidence |
 
 ---
 
@@ -354,3 +355,37 @@ The interview version of this is short: *"I know the rule, I measured it, and I
 can't tell you why — here's what I ruled out."* That is a stronger answer than a
 confident wrong mechanism, and an interviewer who knows the domain will find the
 contradiction in the confident version.
+
+## E16
+**Claim I committed:** the Rust shot parser is "AI-generated," and that is a reason
+not to make it central — "a liability as a centrepiece."
+
+**Evidence I had:** one string in its CLI definition, `author("MiniMax Agent")`.
+
+**What was actually true:** that string is left over from an early prototype
+scaffold; the functional parser was written with Claude Code. So was every other
+line in this repository, including the models, the orchestration and the lessons
+making the accusation.
+
+**Two distinct mistakes, and the second is the worse one:**
+
+**Inferring provenance from metadata.** An `author` field is a default someone
+didn't change. I had the parser building and running — 1.875M rallies, zero
+failures, 89.9% oracle agreement — and reached for a config string instead of the
+measurement I'd already taken.
+
+**Applying a standard inconsistently.** Even granting the premise, the objection
+only works if AI-assisted code is disqualifying, and by that standard nothing here
+survives. I held one file to a bar the rest of the repo was exempt from, without
+noticing the rest of the repo existed.
+
+**Rule:** judge an artifact by its behaviour against an independent check, which is
+the standard this whole repo runs on. And before flagging something as a
+disqualifier, apply it to the surrounding work — if the rest would fail too, the
+criterion is wrong, not the artifact.
+
+**What survived the correction:** the *integration* objection, which never depended
+on provenance. A compiled binary inside a dbt lineage is a black box in the DAG,
+and "every output traceable to source" is the story this repo sells. Using the
+parser as an oracle for a Python or SQL tokenizer keeps that intact and still saves
+writing the state machine.

@@ -153,8 +153,21 @@ The trap in both directions:
 **Note on the existing Rust parser:** it's a real tokenizer, and its value sits
 precisely in the tier we hadn't reached. Measured on rally length it ties a
 one-liner, which says nothing bad about it — that's a counting question. Its open
-question is integration (a compiled binary inside a dbt lineage; AI-generated
-code as a centrepiece), not capability. Using it as the *oracle* for a
+question is **integration** -- a compiled binary inside a dbt lineage -- not
+capability and not provenance.
+
+*(Provenance correction: I originally flagged this parser as "AI-generated" on the
+strength of `author("MiniMax Agent")` in its CLI config, and treated that as a
+reason not to put it at the centre of the project. Kyle's account: that string is
+left over from an early prototype scaffold and the functional parser was written
+with Claude Code. Which makes the objection incoherent — **this entire repository
+is written with Claude Code**, so singling out one file was a double standard, and
+the tool that produced a line of code was never the interesting question. The bar
+is the same everywhere here: can its behaviour be explained and is it checked
+against something independent. This parser clears both — 89.9% oracle agreement,
+measured.)*
+
+Using it as the *oracle* for a
 Python or SQL tokenizer sidesteps both while still saving the state machine.
 
 ## Saying it out loud
