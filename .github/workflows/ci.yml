@@ -38,11 +38,25 @@ jobs:
       - name: Install
         run: uv sync --all-extras
 
+      # MUST come before the tests and the Dagster check, both of which read
+      # dbt/target/manifest.json. The manifest is a build artifact and is
+      # gitignored, so on a clean runner it does not exist until dbt makes it.
+      # Ordering this last (as it originally was) had two silent consequences:
+      # `dagster definitions validate` failed outright, and the four
+      # orchestration seam tests SKIPPED -- reported as "27 passed, 4 skipped",
+      # which reads as green.
+      - name: Generate dbt manifest
+        run: |
+          uv run dbt deps --profiles-dir dbt --project-dir dbt
+          uv run dbt parse --profiles-dir dbt --project-dir dbt
+
       - name: Lint
         run: |
           uv run ruff check .
           uv run ruff format --check .
 
+      # With the manifest present, test_orchestration.py actually runs -- it is
+      # what guards the Python/dbt asset-key seam.
       - name: Unit tests
         run: uv run pytest -q
 
@@ -51,17 +65,14 @@ jobs:
       - name: Apply schema
         run: uv run deuce init-db
 
-      # Loading the Definitions catches the whole class of orchestration errors
-      # that `dbt build` cannot: a broken asset key, a stringified context
-      # annotation, a missing resource. Cheap, and it runs before anything else
-      # would notice.
+      # Loading the Definitions catches the class of orchestration errors
+      # `dbt build` cannot: a broken asset key, a stringified context
+      # annotation, a missing resource.
       - name: Dagster definitions validate
         run: uv run dagster definitions validate
 
-      - name: dbt parse + compile
-        run: |
-          uv run dbt deps --profiles-dir dbt --project-dir dbt
-          uv run dbt compile --profiles-dir dbt --project-dir dbt
+      - name: dbt compile
+        run: uv run dbt compile --profiles-dir dbt --project-dir dbt
 
       # Once marts exist and a small fixture is seeded, this becomes the real
       # quality gate:
