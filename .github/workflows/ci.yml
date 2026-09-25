@@ -49,7 +49,7 @@ jobs:
       # The schema has to apply cleanly before dbt can resolve its sources --
       # this catches a DDL/model mismatch without needing any data loaded.
       - name: Apply schema
-        run: uv run tennis init-db
+        run: uv run deuce init-db
 
       # Loading the Definitions catches the whole class of orchestration errors
       # that `dbt build` cannot: a broken asset key, a stringified context
