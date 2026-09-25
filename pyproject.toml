@@ -57,6 +57,14 @@ code_location_name = "deuce"
 line-length = 100
 src = ["src", "tests"]
 
+[tool.ruff.format]
+# Ruff formats Python code blocks inside Markdown. The snippets in lessons/ and
+# docs/ are FRAGMENTS, not modules -- `post_hook=[...]` is a keyword argument
+# inside dbt's `{{ config(...) }}`, so `post_hook=[` is the correct rendering and
+# ruff's `post_hook = [` would make the documentation wrong. Lint them, don't
+# reformat them.
+exclude = ["*.md"]
+
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 

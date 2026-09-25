@@ -27,6 +27,7 @@ recurs.
 | [E15](#e15) | Invented a physical reason my own data refuted | explanation | An unexplained rule beats a plausible wrong one |
 | [E16](#e16) | Judged code by a metadata string, not by its behaviour | provenance | Test the artifact; an author field is not evidence |
 | [E17](#e17) | Joined on a GROUPING SETS column with `=`; NULL never matched | three-valued logic | A nullable join key needs `is not distinct from` |
+| [E18](#e18) | Ran `ruff check` and called it "lint clean"; CI runs more | verification scope | Run the project's entry point, not a subset of it |
 
 ---
 
@@ -417,3 +418,39 @@ is also what "no data yet" looks like. Third member of the family with E6 (`CASE
 … ELSE` swallowing NULL) and the tiebreak bug: **Postgres's three-valued logic
 fails quietly by design**, so any NULL-capable column in a predicate deserves a
 deliberate decision rather than a default operator.
+
+## E18
+**Symptom:** the first CI run on GitHub failed, on the very first push. I had said
+"ruff clean" several times that session.
+
+**Cause:** I ran `uv run ruff check .` — the *linter*. CI runs what `make lint`
+runs:
+
+```make
+lint:
+	uv run ruff check .
+	uv run ruff format --check .
+```
+
+The formatter check was never executed locally. `ruff format` reformats Python code
+blocks **inside Markdown**, and `lessons/010` contains a dbt config fragment where
+`post_hook=[` is correct (it is a keyword argument inside `{{ config(...) }}`).
+Ruff wanted `post_hook = [`, which would have made the documentation wrong.
+
+**Fix:** two parts. `[tool.ruff.format] exclude = ["*.md"]`, because those snippets
+are fragments rather than modules. And the process fix: run `make lint`.
+
+**Rule:** **the project's entry point is the contract; a command that resembles it
+is not.** The Makefile existed precisely so that "lint" meant one fixed thing, and
+I bypassed it and substituted my own narrower version — then reported the narrower
+result in the broader language.
+
+This is the same shape as the verification-before-completion discipline the repo
+already follows, failing at the level of *which command counts*. "I ran the linter"
+became "lint is clean" became a red CI badge on the first public push, which is the
+most visible possible place for it to surface.
+
+**Worth noting what did NOT fail:** `dbt build`, `pytest`, and
+`dagster definitions validate` all passed on the runner first time. The
+orchestration seam, the index assertions and the oracle regression tests all held
+in a clean environment. The thing that broke was the one I had checked by hand.
