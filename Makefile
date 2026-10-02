@@ -1,7 +1,10 @@
 # Increment 0 workflow:  make setup && make up && make db-init && make ingest && make demo PLAYER="Carlos Alcaraz"
 
 SHELL := /bin/bash
-DBT   := uv run dbt --profiles-dir dbt --project-dir dbt
+# Env vars, not flags: dbt 1.12 accepts --profiles-dir only AFTER the subcommand,
+# so `dbt --profiles-dir dbt build` fails with "No such option". Env vars work
+# for every subcommand, which is what a reusable prefix needs.
+DBT   := DBT_PROFILES_DIR=dbt DBT_PROJECT_DIR=dbt uv run dbt
 PLAYER ?= Carlos Alcaraz
 
 .DEFAULT_GOAL := help

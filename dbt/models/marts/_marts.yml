@@ -44,6 +44,33 @@ models:
           - accepted_values:
               arguments:
                 values: ['break_point', 'game_point', 'deuce', 'neutral', 'unknown']
+          # Guard for errors E19: a tiebreak '0-1' or '0-0' used to half-parse as
+          # a regular score and land in 'neutral'. 10,476 points did.
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "= 'unknown'"
+              config:
+                where: "is_tiebreak_game"
+      - name: is_tiebreak_game
+        description: >
+          True for every point of a tiebreak game, including its '0-0' point.
+          Decided per GAME (any point failing the standard-score parse), because
+          a single tiebreak score like '0-1' can half-parse as a regular one.
+          Catches 7-point, short-set and match tiebreaks alike.
+        data_tests: [not_null]
+      - name: server_games_won
+        description: Games the server has won in the current set, before this point.
+      - name: returner_games_won
+        description: Games the returner has won in the current set, before this point.
+      - name: server_sets_won
+        description: Sets the server has won before this one.
+      - name: returner_sets_won
+        description: Sets the returner has won before this one.
+      - name: best_of
+        description: >
+          3 or 5, from upstream match metadata. NOT always consistent with the
+          sets played -- 8 matches are labelled best-of-3 but play 4 or 5 sets.
+          Check before using it to decide whether a match is over.
       - name: court_side
         description: "deuce | ad, derived from score parity. NULL on tiebreak points."
         data_tests:
@@ -165,9 +192,9 @@ models:
         data_tests: [not_null, unique]
       - name: is_tiebreak
         description: >
-          True for tiebreaks, where the server rotates every two points. All
-          4,928 tiebreaks in the data show a server change and no regular game
-          does, so this detector is exact.
+          True for tiebreaks, where the server rotates every two points. 4,929
+          tiebreaks; the server changes in all 4,928 that have player names, and
+          in 1 of 291,357 regular games (noise). Effectively exact.
       - name: server_name
         description: NULL on tiebreaks -- there is no single server to credit.
       - name: held
@@ -367,3 +394,70 @@ models:
         description: >
           How many of the four buckets have >=20 points. Below 4, the slope is
           fitted on thin cells.
+
+  - name: mart_pressure_index
+    description: >
+      One row per point with a leverage score: how much the server's chance of
+      winning the MATCH swings on this point. Factorised as game_leverage x
+      set_swing x match_swing, which is exact under the Markov structure of
+      scoring. leverage_index is normalised so 1.0 = the average point on that
+      tour. Point->game probabilities are PARAMETRIC: one point-win rate per
+      (tour, surface), points assumed iid. So leverage describes the SCORE for a
+      typical server on that tour and surface -- not this server, and not the
+      kind of server who usually reaches this score. Say so when quoting it.
+      Tiebreak points have NULL leverage in v1. Reads fct_points / fct_games
+      only; no oracle involved, so no circularity.
+    columns:
+      - name: point_key
+        description: Surrogate key over (match_id, point_number); joins to fct_points.
+        data_tests: [not_null, unique]
+      - name: is_tiebreak_game
+        description: >
+          True for tiebreak points, whose leverage is NULL in v1 -- the most
+          important points in tennis are missing, and this column is how you
+          cannot forget it.
+        data_tests: [not_null]
+      - name: game_leverage
+        description: >
+          P(server holds | wins point) - P(server holds | loses point). Highest
+          at 30-40 and AD-out (identical by the deuce rule), lowest at 40-0.
+          NULL on tiebreak points.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0 and 1"
+              config:
+                where: "game_leverage is not null"
+      - name: set_swing
+        description: >
+          P(server wins set | holds this game) - P(... | broken), by games score.
+          Advantage sets are folded past 5-5, since only the lead matters there.
+      - name: match_swing
+        description: >
+          P(server wins match | wins this set) - P(... | loses it), by sets score
+          and best_of. Exactly 1 in a deciding set. NULL where best_of contradicts
+          the sets played.
+        data_tests:
+          # The test that would have caught the best_of bug: 1-1 in best-of-3
+          # measured 0.9986 before inconsistent matches were excluded.
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "= 1"
+              config:
+                where: >
+                  (best_of = 3 and server_sets_won = 1 and returner_sets_won = 1)
+                  or (best_of = 5 and server_sets_won = 2 and returner_sets_won = 2)
+      - name: match_leverage
+        description: >
+          game_leverage x set_swing x match_swing. The absolute swing in match
+          win probability. Use leverage_index to compare points.
+      - name: leverage_index
+        description: >
+          match_leverage / tour mean. 1.0 = an average point. Per tour, because base hold rates differ (men ~.80,
+          women ~.66) enough that a pooled mean distorts both.
+      - name: hold_state_n
+        description: Points behind the (tour, surface) point-win rate that hold_prob is derived from.
+      - name: set_state_n
+        description: Games behind the set_swing estimate. Small in deep advantage sets.
+      - name: match_state_n
+        description: Sets behind the match_swing estimate.

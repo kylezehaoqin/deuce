@@ -105,7 +105,7 @@ Python is pinned to 3.12 (`.python-version`) — dbt-core and Dagster do not sup
 
 `src/deuce/orchestration/` holds the Dagster layer: one asset per
 ingest source, dbt models as assets via `dagster-dbt`, a stopped-by-default daily
-schedule, and a volume-anomaly asset check per source. 20 assets, 38 checks.
+schedule, and a volume-anomaly asset check per source. 22 assets, 49 checks.
 
 **The seam is fragile by nature and guarded by tests.** The graph joins up only
 because the asset key we derive (`raw/<table>`) equals the key dagster-dbt derives
@@ -203,6 +203,10 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
   fields). The loader rejects them on field count; they land in
   `raw.error_records`. Re-loading does not delete rows that *became* invalid —
   truncate and reload if a validation rule tightens.
+- **`'0'` is valid in both game and tiebreak scores**, so tiebreak-ness is
+  decided per game, not per point (errors E19). Use `is_tiebreak_game`.
+- **`best_of` lies in 8 matches** (labelled 3, played 4–5 sets). Check it against
+  sets played before using it to decide whether a match is over.
 - `CASE … ELSE` swallows NULL. Tiebreak scores aren't standard game scores; guard
   them explicitly or every tiebreak point silently becomes `'ad'`. (errors E6)
 - Never commit match data or the private career docs (`/0*.md`,
@@ -212,7 +216,7 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
 
 ## Open work
 
-**State:** Increments 0 and 1 complete. `dbt build` 56 pass / 1 warn, pytest 31.
+**State:** Increments 0 and 1 complete. `dbt build` 69 pass / 1 warn, pytest 31.
 Marts: `fct_points` -> `fct_serves` / `fct_games`, `mart_serve_patterns`,
 `dim_players`, `dim_charters`, `mart_data_coverage`. Dagster orchestrates
 ingest + dbt. Everything on `main`, **not pushed to a remote yet** -- the brief
@@ -237,6 +241,8 @@ Kyle's, in priority order:
 
 Mine, queued:
 
-- `mart_rally_shape`, `mart_pressure_index`, `mart_player_style`,
-  `mart_matchup` -- see `docs/marts.md` build order.
+- `mart_player_style`, then `mart_matchup` (which needs it) -- see
+  `docs/marts.md` build order. `mart_rally_shape` and
+  `mart_pressure_index` are built (the latter's `hold_prob` written by Claude at
+  Kyle's request -- parametric, reasoning in H12; worth his review).
 - The pgvector leg once a style mart exists.

@@ -454,3 +454,36 @@ most visible possible place for it to surface.
 `dagster definitions validate` all passed on the runner first time. The
 orchestration seam, the index assertions and the oracle regression tests all held
 in a clean environment. The thing that broke was the one I had checked by hand.
+
+## E19
+**Symptom:** 10,476 tiebreak points carried `pressure = 'neutral'` in `fct_points`.
+Found while scaffolding `mart_pressure_index`: the score-state distribution had
+rows with `server_points = 0` and `returner_points` NULL, which no real game score
+produces.
+
+**Cause:** `int_point_rally_length` parsed each side of the score independently,
+and its comment claimed that "is exactly how tiebreak points opt out". It isn't.
+`'0'` is a valid token in BOTH grammars, so a tiebreak `'0-1'` half-parses to
+`(0, NULL)` and a tiebreak `'0-0'` parses cleanly to `(0, 0)`. The pressure CASE
+then walked past every NULL-guarded branch and landed on `'neutral'`.
+
+Prediction before the fix: +14,418 `unknown`. Actual: +10,476. The gap is the
+`(NULL, 0)` half — those already fell through to `unknown` because the CASE checks
+`server_points is null`. The prediction was wrong for an informative reason: the
+bug only bit on one side.
+
+**Fix:** decide tiebreak-ness per GAME (any point failing the parse), then null
+both sides for every point in it. Guarded by an `expression_is_true` test on
+`fct_points.pressure` — shown to fail with exactly 10,476 rows when the old parse
+is restored.
+
+**Rule:** **when two grammars share a token, a per-token parse cannot tell them
+apart — classify the container, not the token.** Same family as the `^[0-9]` let
+regex (lesson 005): it's not what the parser rejects that hurts, it's what it
+accepts that it shouldn't.
+
+A second finding from the same session, same class: `best_of` is upstream
+metadata and 8 matches contradict it (labelled 3, played 4–5 sets). A match-winner
+rule of "first to best_of/2+1 sets" then gives those matches TWO winners. Caught
+by writing the prediction "match_swing at 1-1 in best-of-3 is exactly 1.0" and
+getting 0.9986.

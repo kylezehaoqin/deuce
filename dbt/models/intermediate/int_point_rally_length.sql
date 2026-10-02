@@ -8,20 +8,46 @@
 -- external oracle today, so rally-shape questions (#3, #4, #5, #10 in
 -- questions.yml) can be answered and trusted before the tokenizer exists.
 
-with points as (
+with parsed as (
 
     select
         *,
-        -- Score -> points played, per side. Null for any score that is not a
-        -- standard game score, which is exactly how tiebreak points opt out.
+        -- Score -> points played, per side. Null for any side that is not a
+        -- standard game score.
         case split_part(point_score, '-', 1)
             when '0' then 0 when '15' then 1 when '30' then 2
-            when '40' then 3 when 'AD' then 4 end as server_points,
+            when '40' then 3 when 'AD' then 4 end as parsed_server_points,
         case split_part(point_score, '-', 2)
             when '0' then 0 when '15' then 1 when '30' then 2
-            when '40' then 3 when 'AD' then 4 end as returner_points
+            when '40' then 3 when 'AD' then 4 end as parsed_returner_points
     from {{ ref('stg_points') }}
     where rally_notation is not null
+
+),
+
+points as (
+
+    -- Tiebreak points must opt out WHOLE, and the per-side parse alone does not
+    -- do that: '0' is a valid game score, so a tiebreak '0-1' half-parses to
+    -- (0, NULL) and a tiebreak '0-0' parses cleanly to (0, 0). Measured: 9,512
+    -- half-parsed and 4,906 clean 0-0 tiebreak points, all of which fct_points
+    -- labelled 'neutral' pressure. (errors E19)
+    --
+    -- The reliable signal is the GAME, not the point: a game is a tiebreak if
+    -- any of its points fails the standard parse. That also catches the short-set
+    -- (3-3) and match-tiebreak (0-0) formats that a "games level at 6-6" rule
+    -- would miss.
+    select
+        *,
+        case when not is_tiebreak_game then parsed_server_points end   as server_points,
+        case when not is_tiebreak_game then parsed_returner_points end as returner_points
+    from (
+        select
+            *,
+            coalesce(bool_or(parsed_server_points is null or parsed_returner_points is null)
+                over (partition by match_id, game_number), false)      as is_tiebreak_game
+        from parsed
+    ) g
 
 ),
 
@@ -42,6 +68,7 @@ final as (
         p.point_winner_num,
         p.is_second_serve_point,
         p.is_tiebreak_set,
+        p.is_tiebreak_game,
 
         -- Set context. Upstream carries sets-won-so-far, so the set in progress
         -- is one more than the sets already decided.

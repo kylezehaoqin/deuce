@@ -50,7 +50,8 @@ matches as (
         player_1_hand,
         player_2_hand,
         round,
-        tournament
+        tournament,
+        best_of
     from {{ ref('stg_matches') }}
 
 ),
@@ -92,9 +93,20 @@ final as (
         p.court_side,
         p.is_second_serve_point,
         p.is_tiebreak_set,
+        p.is_tiebreak_game,
         p.set_number,
         p.p1_games_won,
         p.p2_games_won,
+        -- The same scoreboard, server-oriented, so match-state questions need no
+        -- player-number arithmetic downstream (mart_pressure_index keys on them).
+        case when p.server_player_num = 1 then p.p1_games_won else p.p2_games_won end
+                                                        as server_games_won,
+        case when p.server_player_num = 1 then p.p2_games_won else p.p1_games_won end
+                                                        as returner_games_won,
+        case when p.server_player_num = 1 then p.p1_sets_won else p.p2_sets_won end
+                                                        as server_sets_won,
+        case when p.server_player_num = 1 then p.p2_sets_won else p.p1_sets_won end
+                                                        as returner_sets_won,
         p.point_score,
         p.server_points,
         p.returner_points,
@@ -129,6 +141,7 @@ final as (
 
         m.tournament,
         m.round,
+        m.best_of,
         p.match_date,
         p.tour,
         p.surface,

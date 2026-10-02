@@ -12,6 +12,8 @@ Reference. Look things up; don't copy them into writing.
 - [Oracle testing](#oracle-testing)
 - [Idempotency](#idempotency)
 - [Two kinds of trust](#two-kinds-of-trust)
+- [Parsing: classify the container, not the token](#parsing-classify-the-container-not-the-token)
+- [Leverage and the chain rule](#leverage-and-the-chain-rule)
 
 ---
 
@@ -365,3 +367,63 @@ The failure modes are symmetric and both look like success:
 parser" and "does this finding hold" are different questions that both have to
 be asked, and why a data-quality tier list is worth writing down rather than
 carrying in your head.
+
+---
+
+## Parsing: classify the container, not the token
+
+When two formats share a token, parsing each token on its own cannot tell the
+formats apart. It won't error, either. It quietly accepts the shared tokens and
+rejects the rest, so you get a record that's half one format and half the other.
+
+Example: a regular game score is `0/15/30/40/AD`, a tiebreak score is `0/1/2/3…`.
+`'0'` is in both. Parse each side of `'0-1'` independently and you get `(0, NULL)`
+— a regular score for the server, garbage for the returner. `'0-0'` parses
+*perfectly* as a regular score and is still wrong.
+
+**The fix is to decide the format at the level that owns it** — the game, the
+file, the message — then parse every token under that decision. Here: a game is
+a tiebreak if *any* of its points fails the regular parse, and every point in it
+is treated as a tiebreak point, including the clean-looking `0-0`.
+
+**The general smell:** a parser that "opts out" by returning NULL on unfamiliar
+input. Ask what it *accepts* that it shouldn't, not just what it rejects. Same
+shape as a regex anchored at `^[0-9]` that silently declines strings starting
+with a let. The failures that hurt are silent acceptances, not loud rejections.
+
+---
+
+## Leverage and the chain rule
+
+**Leverage** of an event = how much the final outcome's probability swings on it:
+
+    leverage = P(win | this event goes your way) - P(win | it doesn't)
+
+Baseball's Leverage Index is this, normalised so 1.0 = an average plate
+appearance. It separates "high stakes" from "high drama".
+
+**The problem:** the final outcome depends on a huge state (in tennis: points ×
+games × sets × server × format). You can't estimate P(win | state) directly —
+most states are seen a handful of times.
+
+**The chain rule.** If the event can only affect the outcome *through* an
+intermediate stage (a point only matters via its game, a game only via its set),
+the swing factorises exactly:
+
+    P(match | win pt) - P(match | lose pt)
+      = [P(game | win pt) - P(game | lose pt)] × [P(match | win game) - P(match | lose game)]
+
+Proof in one line: P(match | pt) = P(game | pt)·a + (1 − P(game | pt))·b, where
+a and b don't depend on the point. Subtract the two cases and b cancels.
+
+Apply it twice and one huge table becomes three small ones, each well-populated.
+
+**The assumption doing the work is Markov:** once you know the game's outcome,
+*how* it was won doesn't matter to the match. If there's real momentum across
+games, the factorisation leaks. So the chain rule is exact about the arithmetic
+and only as good as that independence assumption. Check the assumption, not the
+algebra.
+
+**A free sanity check falls out:** in a deciding set the set→match factor must be
+exactly 1. If it isn't, something upstream is wrong (here: matches whose
+best-of label contradicted the sets played).

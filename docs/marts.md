@@ -135,9 +135,9 @@ it. Unlocks:
 
 **Built.** Sanity-checked against reality: men's hold rate **80.2%**, women's
 **66.5%**. Tiebreaks are structurally not games — the server rotates every two
-points — so `server_name`, `held` and `broken` are NULL on those 4,928 rows
-rather than wrong. The detector is exact: every tiebreak shows a server change
-and no regular game does.
+points — so `server_name`, `held` and `broken` are NULL on those 4,929 rows
+rather than wrong. The detector is effectively exact: every named tiebreak shows
+a server change, and 1 of 291,357 regular games does.
 
 ### `mart_rally_shape`
 **Grain:** `(player, rally_bucket, surface, year)`.
@@ -161,6 +161,15 @@ questions be asked properly, and makes 30-40, set point and match point
 comparable on one scale.
 **Buildable from:** score state alone, with a hold-probability model that can be
 as simple as empirical rates from the data itself.
+
+**Built.** Design: the match swing factorises exactly
+(under the Markov structure of scoring) into `game_leverage × set_swing ×
+match_swing`, each a small lookup table estimated from this data — so the
+intractable match state space never has to be estimated directly. The set and
+match tables are built and were run end to end against a throwaway estimator:
+no fan-out, `match_swing` is exactly 1 in deciding sets, 30-40 and AD-out carry
+identical game leverage. The point→game table (`hold_prob`) is parametric — the decision
+and its measured cost are H12. Tiebreak points get NULL leverage in v1.
 
 ### `mart_player_style`
 **Grain:** `(player, year, surface)`.
@@ -313,8 +322,10 @@ those answers trustworthy.
 - **`mart_serve_patterns` grain** — fact vs. pre-aggregated vs. both. Written up
   in the scaffold; still undecided.
 - **The serve+1 anchored shortcut** — unproven, see §4.
-- **Leverage model for `mart_pressure_index`** — empirical hold rates from this
-  data, or a parametric model? Empirical is simpler and self-consistent.
+- ~~**Leverage model for `mart_pressure_index`**~~ — **decided: parametric**
+  (H12). Empirical was selection-biased at deuce; the iid cost is ≤1.6pp.
+- **Tiebreak leverage** — v1 leaves it NULL, i.e. omits the highest-leverage
+  points in the sport. Needs a point→tiebreak state table with server rotation.
 - **Does `dim_charters` feed `parse_confidence`?** Currently confidence is purely
   era-based. Charter completeness is a second, independent axis, and combining
   them may be better than either alone — or may over-complicate a field whose

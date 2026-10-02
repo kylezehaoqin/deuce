@@ -194,3 +194,53 @@ round that worked started from a **diagnostic** — grouping on `left(rally, 1)`
 which immediately exposed 19,687 rallies beginning with a let that the anchored
 strip was silently skipping. Guessing is bounded by imagination; a frequency
 table is not.
+
+## H12
+**Believed:** for `mart_pressure_index`, a parametric hold model (one point-win
+rate per tour × surface, points iid) will (1) overstate hold at 0-0 by 1–3pp,
+because hold probability is concave in p above 0.5 and the average p of a mixed
+population gives more than the average hold (Jensen); and (2) give 0-40 *more*
+leverage than an empirical model, because empirical P(hold | 15-40) is dragged
+down by the weak servers who reach it.
+
+**Falsifiable if:** the parametric 0-0 hold lands at or below the measured rate,
+or empirical 0-40 leverage is the higher one.
+
+**Test:** parametric P(hold | 0-0) vs measured hold rate, per tour × surface; then
+game leverage per state under both models (empirical counts each game once per
+state, so deuce revisits don't over-weight long games).
+
+```
+ tour | surface |   p   | empirical | parametric |  gap
+ M    | Clay    | 0.616 |   0.754   |   0.769    | +0.015
+ M    | Grass   | 0.669 |   0.845   |   0.859    | +0.014
+ M    | Hard    | 0.646 |   0.806   |   0.823    | +0.016
+ W    | Clay    | 0.557 |   0.635   |   0.641    | +0.006
+ W    | Grass   | 0.590 |   0.705   |   0.714    | +0.009
+ W    | Hard    | 0.570 |   0.663   |   0.671    | +0.008
+
+ game leverage, M Hard   empirical  parametric   diff
+ 30-40 / AD-out            0.733      0.769     +0.036
+ 15-40                     0.454      0.497     +0.043
+ 0-40                      0.279      0.321     +0.042
+ deuce                     0.457      0.422     -0.036
+ 0-0                       0.253      0.220     -0.033
+ 40-0                      0.030      0.029     -0.001
+```
+
+**Verdict: ✅ both confirmed.** The gap is positive in all six cells, and smaller
+on the women's tour — also what Jensen predicts, since p sits nearer 0.5 where
+the hold curve is close to linear. Leverage splits cleanly: **every state where
+the returner is one point from the break gains under parametric; every other
+state loses.** The mechanism is selection at deuce: servers who reach it are
+weaker than average (empirical P(hold | deuce) .733 vs .769).
+
+**Decision:** parametric. Leverage should describe the score, not who tends to
+reach it — baseball's LI makes the same call. The rank order of states barely
+moves between the two; what the choice changes is *how much* break points stand
+out, by ~5% at 30-40 and ~15% at 0-40. The 0-0 gap (≤1.6pp) is the measured cost
+of the iid assumption.
+
+**Not tested:** whether the gap is server heterogeneity (Jensen) or genuine
+non-independence (pressure). Both push the same direction. Separating them needs
+p per server, not per tour — a question for `mart_player_style`'s era.

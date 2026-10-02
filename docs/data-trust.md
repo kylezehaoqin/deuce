@@ -27,7 +27,7 @@ Someone else computed these independently and we agree with them.
 | **Rally length** | 90.0% / 82.5% / 55.2% exact agreement with `Rally.csv` by era. Regression-tested |
 | **Hold / break rates** | 80.2% men, 66.5% women — both match the real tours |
 | **Game winner** | Derivable from the last point for 100% of 296,288 games |
-| **Tiebreak detection** | Exact: server rotates in all 4,928, in no regular game |
+| **Tiebreak detection** | Effectively exact: server rotates in all 4,928 named tiebreaks (of 4,929), in 1 of 291,357 regular games |
 
 The hold-rate check is the cheapest and most persuasive of these: it isn't "the
 code ran," it's "the number the world already agrees with."
@@ -55,6 +55,7 @@ unless the source is.
 | Any **direction rate** | Direction is optional in the spec. Denominator is "shots with a direction charted," not "shots" — and missingness correlates with charter and era, so it is **not random** |
 | Shot-direction **scope** | Settled: which shots Sackmann counts. Median gap 2/match, 5.7% exact. Good enough to reconcile totals, not to attribute individual shots |
 | Anything from a **thin cell** | `questions.yml` says N<20 is thin. `mart_data_coverage` makes this queryable — 19,569 rows of (player, surface, season) with populated-field rates |
+| **Leverage** (`mart_pressure_index`) | Parametric: a typical server on that tour × surface, points assumed iid. Overstates hold by ≤1.6pp at 0-0 (H12). Says nothing about *this* server. Tiebreak points are NULL — the highest-leverage points are absent |
 | **Charter-skewed** samples | Direction charting ranges 62.3%–90.6% across charters; residual gap spans −9.8 to +10.0 per match by charter |
 
 ## Tier D — not trustworthy yet

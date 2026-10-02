@@ -26,11 +26,14 @@
 --  In a tiebreak the server rotates every two points, so "who held" has no
 --  meaning. Measured, the split is exact:
 --
---    291,358 regular games  -- one server throughout (2 exceptions, noise)
---      4,928 tiebreaks      -- server changes in ALL of them, ~12 points each
+--    291,357 regular games  -- one server throughout (1 exception, noise)
+--      4,929 tiebreaks      -- server changes in all 4,928 that have player
+--                              names (1 belongs to an unmatched match_id)
 --
 --  Detection is free: tiebreak points score numerically ('5-4'), so they fail
---  the standard-score parse upstream and arrive with server_points NULL.
+--  the standard-score parse upstream and arrive with server_points NULL. That
+--  is enforced per GAME in int_point_rally_length, because '0-1' and '0-0'
+--  would otherwise half-parse as regular scores (errors E19).
 --
 --  Consequently `server_name`, `held` and `broken` are NULL on tiebreak rows
 --  rather than wrong. Filter with `not is_tiebreak` for hold/break questions --
