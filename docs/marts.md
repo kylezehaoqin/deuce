@@ -184,6 +184,17 @@ Alcaraz "trends".
 **Warning:** see §5 on oracle circularity — this mart's source must change when
 `fct_shots` lands.
 
+**Built.** 12 features, one per concept, style not outcome -- the reasons are in
+the model's `features` CTE. Counts plumbing: 8,830
+(player, season, surface) rows, unique, 100% joined to `mart_data_coverage`.
+Every shot family is summed from ShotTypes **leaf** rows — measured, his
+roll-ups `Gs` (= F+B, excluding slices), `Sl` (short of R+S in 8.3%) and `Base`
+do not mean what their names say. Serve entropy uses the `mart_serve_patterns`
+formula and matches an independent calculation to 4 decimals.
+T9's backhand-slice proxy reproduces in rank order but 2–8% lower in level
+(Federer .337 vs .365); the original query's match scope is not recorded, so
+the gap is unexplained.
+
 ### `mart_matchup`
 **Grain:** `(player, opponent)`.
 **Columns:** head-to-head, plus the interesting part — **how the player's profile

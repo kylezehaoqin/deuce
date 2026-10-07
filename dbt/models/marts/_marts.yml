@@ -461,3 +461,156 @@ models:
         description: Games behind the set_swing estimate. Small in deep advantage sets.
       - name: match_state_n
         description: Sets behind the match_swing estimate.
+
+  - name: mart_player_style
+    description: >
+      One style vector per (player, season, surface). Rates plus the count each
+      rate is computed over. NOT z-scored -- standardisation depends on the
+      comparison population (T9: pooling ATP and WTA made Ivanovic Federer's
+      nearest neighbour), so it belongs to the consumer. The vector describes
+      HOW a player plays, not how well: no points-won or winner/error ratios.
+      point_ending_rate is the one feature that also carries quality. Each
+      concept appears once, because two correlated features weight that concept
+      twice (T9 did this with slice). Shot mix and direction read Sackmann's
+      ShotTypes / ShotDirection ORACLES, summed from leaf rows only. Allowed
+      until fct_shots exists. After that this mart must read fct_shots, or the
+      validation is circular. Serve and rally features are our parse. Cells
+      under 20 matches are thin. They stay in the mart so the gap is visible.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [player_name, season, surface]
+    columns:
+      - name: player_name
+        data_tests: [not_null]
+      - name: season
+        description: Calendar year of the match.
+        data_tests: [not_null]
+      - name: surface
+        description: Part of the grain, never pooled -- surface mix confounds trends (T10).
+        data_tests: [not_null]
+      - name: matches
+        description: Charted matches in the cell. Under 20 is thin (questions.yml).
+      - name: fh_dominance
+        description: >
+          Forehand drives / (forehand + backhand drives). n = drives.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0 and 1"
+              config:
+                where: "fh_dominance is not null"
+      - name: bh_slice_rate
+        description: >
+          Backhand slices / backhand-side shots. The one-hander proxy from T9. It measures style, not grip: Murray (two-hander) scores above Gasquet (one-hander). n = bh_side_shots.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0 and 1"
+              config:
+                where: "bh_slice_rate is not null"
+      - name: net_rate
+        description: >
+          Net shots (volleys, overheads, half-volleys) / shots. n = shots.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0 and 1"
+              config:
+                where: "net_rate is not null"
+      - name: drop_shot_rate
+        description: >
+          Drop shots / shots. n = shots.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0 and 1"
+              config:
+                where: "drop_shot_rate is not null"
+      - name: point_ending_rate
+        description: >
+          Shots that end the point (winner, unforced error, or induced forced error) / shots. The first-strike signal. Also partly a quality measure. n = shots.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0 and 1"
+              config:
+                where: "point_ending_rate is not null"
+      - name: fh_inside_out_rate
+        description: >
+          Forehand inside-out / forehand drives with a direction. n = fh_directed. Never divide by fh_directed + bh_directed.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0 and 1"
+              config:
+                where: "fh_inside_out_rate is not null"
+      - name: fh_down_the_line_rate
+        description: >
+          Forehand down-the-line / forehand drives with a direction. n = fh_directed.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0 and 1"
+              config:
+                where: "fh_down_the_line_rate is not null"
+      - name: bh_down_the_line_rate
+        description: >
+          Backhand down-the-line / backhand drives with a direction. n = bh_directed.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0 and 1"
+              config:
+                where: "bh_down_the_line_rate is not null"
+      - name: first_serve_t_rate
+        description: >
+          First serves to the T / first serves with a direction and a court side. Faults included: the direction is where the server aimed. n = deuce_sided + ad_sided.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0 and 1"
+              config:
+                where: "first_serve_t_rate is not null"
+      - name: deuce_serve_entropy
+        description: >
+          First-serve direction entropy on the deuce side. Same formula as mart_serve_patterns: 0 = always one direction, 1 = uniform. n = deuce_sided.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0 and 1"
+              config:
+                where: "deuce_serve_entropy is not null"
+      - name: ad_serve_entropy
+        description: >
+          First-serve direction entropy on the ad side. n = ad_sided.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0 and 1"
+              config:
+                where: "ad_serve_entropy is not null"
+      - name: first_serve_in_rate
+        description: >
+          First serves in / first serves. n = first_serves.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0 and 1"
+              config:
+                where: "first_serve_in_rate is not null"
+      - name: avg_rally_length
+        description: Mean rally length, high + medium parse confidence only. n = points_rally_scoreable.
+      - name: fh_directed
+        description: >
+          Forehand drives with a direction charted. The denominator for every
+          forehand direction rate. Direction is optional in the spec, so this
+          count is not "forehands".
+      - name: bh_directed
+        description: >
+          Backhand drives with a direction charted. The denominator for every
+          backhand direction rate. Do not add it to fh_directed.
+      - name: direction_charted_rate
+        description: >
+          Share of this cell's points with direction charted. A trend in a
+          direction rate that moves with this column is suspect (T10).

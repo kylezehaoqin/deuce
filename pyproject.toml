@@ -56,6 +56,8 @@ code_location_name = "deuce"
 [tool.ruff]
 line-length = 100
 src = ["src", "tests"]
+# Installed agent skills are third-party code. Our lint rules do not apply to them.
+extend-exclude = [".agents"]
 
 [tool.ruff.format]
 # Ruff formats Python code blocks inside Markdown. The snippets in lessons/ and

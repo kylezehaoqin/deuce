@@ -49,6 +49,12 @@ Good scaffold examples to imitate: `dbt/models/marts/fct_shots.sql`,
     make backfill PARTITION=…  reload ONE points file; `make partitions` lists them
     make lint test         ruff + pytest
 
+Ad-hoc SQL: `docker compose exec -T postgres psql -U tennis -d tennis -c "…"`
+(Postgres down -> `make up`). Every dbt model -- stg_, int_ and marts -- lives in
+schema `analytics_analytics`. One model plus downstream:
+`uv run dbt build --profiles-dir dbt --project-dir dbt --select X+` -- the flags go
+AFTER the subcommand (dbt 1.12).
+
 Python is pinned to 3.12 (`.python-version`) — dbt-core and Dagster do not support
 3.13+. Do not bump it to match a newer system Python.
 
@@ -100,12 +106,16 @@ Python is pinned to 3.12 (`.python-version`) — dbt-core and Dagster do not sup
   back, not how much work it is. A partial index on a ~10% boolean beat a plain
   index on a 0.9%-selective column by 150x here, because heap fetches dominate.
   (errors E12)
+- **Testing a disabled model's plumbing:** copy it to
+  `dbt/models/marts/zz_tmp_<name>.sql` with `enabled=true` and a throwaway stub,
+  `dbt run --select` it, query it, then delete the file AND
+  `drop table analytics_analytics.zz_tmp_<name>`. Never commit it.
 
 ## Orchestration
 
 `src/deuce/orchestration/` holds the Dagster layer: one asset per
 ingest source, dbt models as assets via `dagster-dbt`, a stopped-by-default daily
-schedule, and a volume-anomaly asset check per source. 22 assets, 49 checks.
+schedule, and a volume-anomaly asset check per source. 23 assets, 65 checks.
 
 **The seam is fragile by nature and guarded by tests.** The graph joins up only
 because the asset key we derive (`raw/<table>`) equals the key dagster-dbt derives
@@ -177,6 +187,10 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
 
 ## Landmines
 
+- No SQL `--` comments inside `{{ config(...) }}`: Jinja fails with "invalid
+  syntax for function call expression". Put the comment above the block.
+- Column-level `dbt_utils.expression_is_true` prepends the column name: write
+  `expression: "= 1"`, not `"match_swing = 1"`.
 - Upstream `Gm#` is `'X'` or `'X (Y)'` depending on charting era; `TbSet` is
   `'1'/'0'` or `'True'/'False'`. Both are handled in `stg_points` — assume more of
   this kind of variance exists.
@@ -203,6 +217,8 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
   fields). The loader rejects them on field count; they land in
   `raw.error_records`. Re-loading does not delete rows that *became* invalid —
   truncate and reload if a validation rule tightens.
+- **ShotTypes roll-up rows lie**: `Gs` = F+B (no slices), `Sl` falls short of
+  R+S in 8.3% of matches. Sum leaf rows. Serve direction `'T'` is uppercase.
 - **`'0'` is valid in both game and tiebreak scores**, so tiebreak-ness is
   decided per game, not per point (errors E19). Use `is_tiebreak_game`.
 - **`best_of` lies in 8 matches** (labelled 3, played 4–5 sets). Check it against
@@ -216,7 +232,7 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
 
 ## Open work
 
-**State:** Increments 0 and 1 complete. `dbt build` 69 pass / 1 warn, pytest 31.
+**State:** Increments 0 and 1 complete. `dbt build` 86 pass / 1 warn, pytest 31.
 Marts: `fct_points` -> `fct_serves` / `fct_games`, `mart_serve_patterns`,
 `dim_players`, `dim_charters`, `mart_data_coverage`. Dagster orchestrates
 ingest + dbt. Everything on `main`, **not pushed to a remote yet** -- the brief
@@ -241,8 +257,10 @@ Kyle's, in priority order:
 
 Mine, queued:
 
-- `mart_player_style`, then `mart_matchup` (which needs it) -- see
+- `mart_matchup`, once `mart_player_style`'s vector exists -- see
   `docs/marts.md` build order. `mart_rally_shape` and
   `mart_pressure_index` are built (the latter's `hold_prob` written by Claude at
   Kyle's request -- parametric, reasoning in H12; worth his review).
+  `mart_player_style` is built too, its feature vector also written by Claude
+  at Kyle's request (reasons in the `features` CTE; worth his review).
 - The pgvector leg once a style mart exists.
