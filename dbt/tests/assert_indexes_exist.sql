@@ -33,7 +33,8 @@ with expected_leading_column as (
         ('{{ ref("mart_pressure_index") }}'::regclass::oid, 'mart_pressure_index', 'match_id'),
         ('{{ ref("mart_pressure_index") }}'::regclass::oid, 'mart_pressure_index', 'server_name'),
         ('{{ ref("mart_pressure_index") }}'::regclass::oid, 'mart_pressure_index', 'returner_name'),
-        ('{{ ref("mart_player_style") }}'::regclass::oid, 'mart_player_style', 'player_name')
+        ('{{ ref("mart_player_style") }}'::regclass::oid, 'mart_player_style', 'player_name'),
+        ('{{ ref("mart_matchup") }}'::regclass::oid, 'mart_matchup', 'player_name')
     ) as t (relid, model_name, leading_column)
 
 ),

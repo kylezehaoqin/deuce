@@ -614,3 +614,139 @@ models:
         description: >
           Share of this cell's points with direction charted. A trend in a
           direction rate that moves with this column is suspect (T10).
+
+  - name: mart_matchup
+    description: >
+      One row per (player, opponent); each pair appears twice, once from each
+      side. For each style rate (same formulas as mart_player_style, from
+      macros/style_rates.sql): the rate in the pair's matches, the player's
+      baseline, and the delta. The baseline is MATCHED ON SURFACE -- the
+      player's rate on each surface, weighted by the pair's surface mix -- and
+      LEAVES OUT the pair's own matches. Not matched on season, so a delta
+      still includes career change (see first_season / last_season). Not
+      controlled for opponent quality. 77% of pairs have one charted match:
+      they stay, so filter on `matches`. A baseline is NULL when a surface the
+      pair played on has no other matches for the player (1,227 rows).
+      h2h_points_won_rate is the only outcome column.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [player_name, opponent_name]
+    columns:
+      - name: player_name
+        data_tests: [not_null]
+      - name: opponent_name
+        data_tests: [not_null]
+      - name: matches
+        description: Charted matches between the two. 1 for 77% of pairs.
+      - name: baseline_matches
+        description: >
+          The player's other matches on the pair's surfaces, after the pair's
+          own matches are removed. The n behind every *_baseline column.
+      - name: surfaces_without_baseline
+        description: >
+          Surfaces the pair played on where the player has no other matches.
+          Above 0 means every *_baseline is NULL.
+      - name: h2h_points_won_rate
+        description: >
+          Share of points the player won against this opponent. OUTCOME, not
+          style. Points, not matches, because retirements make match winners
+          unreliable.
+      - name: fh_dominance_delta
+        description: "fh_dominance against this opponent minus the matched baseline."
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between -1 and 1"
+              config:
+                where: "fh_dominance_delta is not null"
+      - name: bh_slice_rate_delta
+        description: "bh_slice_rate against this opponent minus the matched baseline."
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between -1 and 1"
+              config:
+                where: "bh_slice_rate_delta is not null"
+      - name: net_rate_delta
+        description: "net_rate against this opponent minus the matched baseline."
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between -1 and 1"
+              config:
+                where: "net_rate_delta is not null"
+      - name: drop_shot_rate_delta
+        description: "drop_shot_rate against this opponent minus the matched baseline."
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between -1 and 1"
+              config:
+                where: "drop_shot_rate_delta is not null"
+      - name: point_ending_rate_delta
+        description: "point_ending_rate against this opponent minus the matched baseline."
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between -1 and 1"
+              config:
+                where: "point_ending_rate_delta is not null"
+      - name: fh_inside_out_rate_delta
+        description: "fh_inside_out_rate against this opponent minus the matched baseline."
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between -1 and 1"
+              config:
+                where: "fh_inside_out_rate_delta is not null"
+      - name: fh_down_the_line_rate_delta
+        description: "fh_down_the_line_rate against this opponent minus the matched baseline."
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between -1 and 1"
+              config:
+                where: "fh_down_the_line_rate_delta is not null"
+      - name: bh_down_the_line_rate_delta
+        description: "bh_down_the_line_rate against this opponent minus the matched baseline."
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between -1 and 1"
+              config:
+                where: "bh_down_the_line_rate_delta is not null"
+      - name: first_serve_t_rate_delta
+        description: "first_serve_t_rate against this opponent minus the matched baseline."
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between -1 and 1"
+              config:
+                where: "first_serve_t_rate_delta is not null"
+      - name: deuce_serve_entropy_delta
+        description: "deuce_serve_entropy against this opponent minus the matched baseline."
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between -1 and 1"
+              config:
+                where: "deuce_serve_entropy_delta is not null"
+      - name: ad_serve_entropy_delta
+        description: "ad_serve_entropy against this opponent minus the matched baseline."
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between -1 and 1"
+              config:
+                where: "ad_serve_entropy_delta is not null"
+      - name: first_serve_in_rate_delta
+        description: "first_serve_in_rate against this opponent minus the matched baseline."
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between -1 and 1"
+              config:
+                where: "first_serve_in_rate_delta is not null"
+      - name: avg_rally_length_delta
+        description: Mean rally length against this opponent minus the matched baseline, in shots.

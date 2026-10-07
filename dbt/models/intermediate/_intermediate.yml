@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: int_player_match_style
+    description: >
+      Style COUNTS per (match, player), no rates. mart_player_style and
+      mart_matchup both sum these rows, so every count has one definition.
+      Shot mix and direction come from Sackmann's ShotTypes / ShotDirection
+      oracles, summed from leaf rows only. Serve and rally counts are our parse.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [match_id, player_name]
+    columns:
+      - name: match_id
+        data_tests: [not_null]
+      - name: player_name
+        data_tests: [not_null]
+      - name: opponent_name
+        description: >
+          The other player in the match. NULL only if the ShotTypes name matches
+          neither player in the matches file.

@@ -33,6 +33,9 @@ Plus two running logs:
   "Federer is not a grinder", "momentum is a myth". Nobody holds the answer key,
   so these need a stated falsifier, a named confound and a scope — and they stay
   provisional. They double as the agent's eval set.
+- **[decisions.md](decisions.md)** — every judgment call: the options, the
+  one rejected and why, who decided, and the evidence. Kyle decides; Claude
+  writes the code.
 - **[errors.md](errors.md)** — every error hit, its root cause, and the general
   rule it taught. Including the self-inflicted ones.
 

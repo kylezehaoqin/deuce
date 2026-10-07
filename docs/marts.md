@@ -203,6 +203,15 @@ rally length delta, aggression delta).
 **Why:** this is the table the analogical-scouting idea actually queries: *"how
 does A deviate against players like B."* Also where the retrodiction eval lives.
 
+**Built.** 15,558 rows, each pair from both sides. The baseline is **matched on
+surface** and **leaves the pair out**. A pooled baseline puts surface mix into
+the delta: for pairs with 5+ matches the median total variation distance between
+the pair's mix and the player's own mix is 0.115, and 19% are at 0.2 or more.
+Leave-one-out matters too: it moves Federer's slice baseline against Nadal from
+.313 to .328. Not matched on season, not controlled for opponent quality. Rates
+come from `macros/style_rates.sql`, shared with `mart_player_style`, and counts
+from `int_player_match_style`, so the two marts cannot drift.
+
 ---
 
 ## 4. Gated on the tokenizer

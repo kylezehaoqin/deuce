@@ -9,28 +9,42 @@ text-to-SQL agent on top of it. See README.md for the vision and the increment p
 
 ## Working agreement
 
-**Scaffold, then hand off.** Build the structure, write the comments that name the
-trade-off, and leave the 5–15 lines that carry *judgment* as a marked `TODO(kyle)`
-with the traps spelled out. Kyle writes those, then asks for review — and review
-means pushing back when something is wrong, not rubber-stamping.
+**Kyle decides. Claude writes all the code** -- SQL and Python included. Kyle does
+not write code by hand. His job is to make the judgment calls and to be able to
+defend them out loud.
 
-What counts as judgment-carrying, and therefore his: grain decisions, parsers,
-statistical controls, anything shaping the agent's behavior, and any tennis
-hypothesis (`lessons/hypotheses-tennis.md`). What isn't, and therefore isn't worth the round trip:
-ingest plumbing, boilerplate, staging models, config, test harnesses.
+**Stop at every decision point.** A decision is a judgment call: grain, parser
+rules, statistical controls, which features or metrics, anything shaping the
+agent's behavior, and any tennis hypothesis (`lessons/hypotheses-tennis.md`).
+For each one, present:
+
+1. The question, in one sentence.
+2. Two to four options, each with its cost.
+3. **Evidence that was measured**, not reasoned. Run the query that makes the
+   trade-off concrete (e.g. "77% of pairs have one match").
+4. A recommendation, with the reason.
+
+Then ask (AskUserQuestion), and build what he picks. Do not build past an open
+decision. If he says "you decide", decide, and mark it `decided by Claude` in
+the log so it is visible for review.
+
+Not decisions, so just do them: ingest plumbing, boilerplate, staging models,
+config, test harnesses, docs upkeep.
+
+**Every decision goes in `lessons/decisions.md`**: the question, the options
+rejected and why, who decided, the evidence, and one "say it out loud"
+sentence. The rejected option is the content of an interview answer.
+
+**Review still means pushback.** If a choice Kyle makes is wrong, say so with
+the evidence before building it.
 
 Two honesty rules on top:
 
-- If a TODO would hand over a problem whose answer is unknown, **say so
-  explicitly** rather than dressing a gap up as an exercise. `fct_shots` and
-  `lessons/005` are both genuinely open; they say so.
+- If a decision has no known answer, **say so explicitly** rather than dressing
+  a gap up as a choice. `fct_shots` and `lessons/005` are both genuinely open.
 - Never claim something works without running it. Prefer breaking a guard on
   purpose to confirm it fires — that's how `assert_rally_length_matches_oracle`
   was shown to have teeth.
-
-Good scaffold examples to imitate: `dbt/models/marts/fct_shots.sql`,
-`src/deuce/agent/prompts.py`,
-`sql/investigations/005_shot_direction_scope.sql`.
 
 ## Commands
 
@@ -115,7 +129,7 @@ Python is pinned to 3.12 (`.python-version`) — dbt-core and Dagster do not sup
 
 `src/deuce/orchestration/` holds the Dagster layer: one asset per
 ingest source, dbt models as assets via `dagster-dbt`, a stopped-by-default daily
-schedule, and a volume-anomaly asset check per source. 23 assets, 65 checks.
+schedule, and a volume-anomaly asset check per source. 25 assets, 83 checks.
 
 **The seam is fragile by nature and guarded by tests.** The graph joins up only
 because the asset key we derive (`raw/<table>`) equals the key dagster-dbt derives
@@ -232,22 +246,23 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
 
 ## Open work
 
-**State:** Increments 0 and 1 complete. `dbt build` 86 pass / 1 warn, pytest 31.
+**State:** Increments 0 and 1 complete. `dbt build` 106 pass / 1 warn, pytest 31.
 Marts: `fct_points` -> `fct_serves` / `fct_games`, `mart_serve_patterns`,
 `dim_players`, `dim_charters`, `mart_data_coverage`. Dagster orchestrates
 ingest + dbt. Everything on `main`, **not pushed to a remote yet** -- the brief
 wants public dated commits, so that is worth fixing.
 
-Kyle's, in priority order:
+Decisions waiting for Kyle, in priority order (Claude builds once decided):
 
-- **`src/deuce/agent/prompts.py`** -- `SYSTEM_PROMPT` is a TODO and is
-  now genuinely unblocked: three marts exist to route to, and
-  `docs/data-trust.md` is the grounding contract it has to encode. This is the
-  critical path to Increment 2.
-- **`dbt/models/marts/fct_shots.sql`** -- stub, `enabled=false`. Needs a
-  tokenizer first (lesson 009); decide its home (Python in `ingest/`, SQL in
-  dbt, or the existing Rust parser as an oracle for one of those). Days, not
-  hours. Unblocks the tactical direction mapping, serve+1, T6, T7.
+- **`mart_matchup` controls** -- surface-matched baseline vs. a surface split,
+  season matching, and whether one-match pairs stay. Measured: 77% of pairs
+  have exactly one charted match, and 235 have 5+. See `lessons/decisions.md`.
+- **`src/deuce/agent/prompts.py`** -- the agent's behavior: refusal policy,
+  how it states caveats, which tiers it may quote. `docs/data-trust.md` is the
+  grounding contract. Critical path to Increment 2.
+- **`dbt/models/marts/fct_shots.sql`** -- where the tokenizer lives (Python in
+  `ingest/`, SQL in dbt, or the Rust parser as an oracle for one of those).
+  Lesson 009. Unblocks the tactical direction mapping, serve+1, T6, T7.
 - ~~Three review corrections to lesson 005~~ -- **applied**, and logged as my
   errors rather than edits: median is 2 not 1 (all eras mean 2.70, p25 -3,
   p75 +8); charter identity explains **23.7%** of residual variance, not the
@@ -257,10 +272,12 @@ Kyle's, in priority order:
 
 Mine, queued:
 
-- `mart_matchup`, once `mart_player_style`'s vector exists -- see
-  `docs/marts.md` build order. `mart_rally_shape` and
+- The pgvector leg (`emb_player_style`) and the T9 retrodiction eval over
+  `mart_matchup` -- see `docs/marts.md`. `mart_rally_shape` and
   `mart_pressure_index` are built (the latter's `hold_prob` written by Claude at
   Kyle's request -- parametric, reasoning in H12; worth his review).
   `mart_player_style` is built too, its feature vector also written by Claude
   at Kyle's request (reasons in the `features` CTE; worth his review).
+  `mart_matchup` is built on Kyle's three decisions: surface-matched baseline,
+  no season match, keep one-match pairs.
 - The pgvector leg once a style mart exists.
