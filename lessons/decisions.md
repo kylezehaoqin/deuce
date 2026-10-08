@@ -24,7 +24,7 @@ Template:
 ---
 
 ## D1 -- Point->game probability for the leverage index: empirical or parametric?
-**Decided by:** Claude (Kyle to review)   **Date:** 2026-10-01
+**Decided by:** Claude; reviewed and approved by Kyle 2026-10-07   **Date:** 2026-10-01
 **Options:**
 - (a) Empirical: the share of games held from each score. Cost: selection bias.
   The servers who reach 0-40 are mostly weak ones, so the leverage mixes the
@@ -41,7 +41,7 @@ gets to deuce. The parametric one cost under two points of accuracy at 0-0, and
 I could state that cost exactly."
 
 ## D2 -- Tiebreak points in the leverage index: model them now, or leave NULL?
-**Decided by:** Claude (Kyle to review)   **Date:** 2026-09-27
+**Decided by:** Claude; reviewed and approved by Kyle 2026-10-07   **Date:** 2026-09-27
 **Options:**
 - (a) Model them now. Cost: a separate state table, with the server rotating
   every two points.
@@ -53,7 +53,7 @@ I could state that cost exactly."
 nobody can quote a leverage number without seeing it."
 
 ## D3 -- Style vector: which features?
-**Decided by:** Claude (Kyle to review)   **Date:** 2026-10-07
+**Decided by:** Claude; reviewed and approved by Kyle 2026-10-07   **Date:** 2026-10-07
 **Options:**
 - (a) Everything available, including points won and winner/error ratios.
   Cost: "plays like X" turns into "is as good as X".

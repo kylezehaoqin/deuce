@@ -275,9 +275,9 @@ Mine, queued:
 - The pgvector leg (`emb_player_style`) and the T9 retrodiction eval over
   `mart_matchup` -- see `docs/marts.md`. `mart_rally_shape` and
   `mart_pressure_index` are built (the latter's `hold_prob` written by Claude at
-  Kyle's request -- parametric, reasoning in H12; worth his review).
+  Kyle's request -- parametric, reasoning in H12; Kyle approved it, D1).
   `mart_player_style` is built too, its feature vector also written by Claude
-  at Kyle's request (reasons in the `features` CTE; worth his review).
+  at Kyle's request (reasons in the `features` CTE; Kyle approved it, D3).
   `mart_matchup` is built on Kyle's three decisions: surface-matched baseline,
   no season match, keep one-match pairs.
 - The pgvector leg once a style mart exists.

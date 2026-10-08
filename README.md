@@ -28,7 +28,8 @@ what this closes.
 
 **The warehouse is built; the agent is not.** Everything below was produced by
 SQL against these marts, not by an LLM. Nothing here is claimed until it runs —
-`dbt build` runs 14 models and 43 tests green; `pytest` 31.
+`dbt build` runs 19 models and 88 tests green (one known warning: 305 points
+whose match is missing upstream); `pytest` 31.
 
 ```
  11,819 matches   1,875,132 points   2,577,836 serves   296,286 games   1,739 players
@@ -124,15 +125,27 @@ flowchart LR
   F --> G["fct_serves"]
   F --> H["fct_games"]
   G --> I["mart_serve_patterns"]
+  F --> R["mart_rally_shape"]
+  F --> P["mart_pressure_index"]
+  H --> P
   J["dim_players · dim_charters"] --> K["mart_data_coverage"]
+  F --> S["int_player_match_style"]
+  M --> S
+  S --> T["mart_player_style"]
+  S --> U["mart_matchup"]
+  K --> T
   I --> L(["LangGraph agent<br/>— Increment 2 —"])
   K --> L
+  R --> L
+  P --> L
+  T --> L
+  U --> L
   M["Sackmann's own<br/>aggregations"] -.->|oracle: diffed in tests| E
   style L stroke-dasharray: 5 5
 ```
 
 Dagster orchestrates ingest and `dbt build` as software-defined assets, with
-date-partitioned backfill for the points files.
+backfill for the points files, partitioned by file.
 
 ### The signature metric
 
@@ -178,7 +191,7 @@ Then the full warehouse:
 ```bash
 make ingest-points    # 178 MB, ~1.9M points, ~60s
 make ingest-oracles   # Sackmann's aggregations — ground truth for the parser
-make dbt-build        # 14 models, 43 tests
+make dbt-build        # 19 models, 88 tests
 make dagster          # asset graph and run history at :3000
 ```
 
@@ -195,11 +208,15 @@ src/deuce/
 
 dbt/models/
   staging/                1:1 with raw — cast, rename, nothing else
-  intermediate/           rally length, court side, charting flags
+  intermediate/           rally length, court side, charting flags,
+                          style counts per (match, player)
   marts/                  fct_points · fct_serves · fct_games
                           dim_players · dim_charters
                           mart_serve_patterns · mart_data_coverage
+                          mart_rally_shape · mart_pressure_index
+                          mart_player_style · mart_matchup
                           fct_shots (stub — needs the tokenizer)
+dbt/macros/               rally length, serve direction, the shared style rates
 dbt/tests/                oracle agreement · fact-vs-aggregate drift · index existence
 
 sql/
