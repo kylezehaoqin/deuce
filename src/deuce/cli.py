@@ -5,6 +5,7 @@
     deuce load [SOURCE]           validate + upsert into the raw schema
     deuce status                  ingest funnel, row counts, rejects
     deuce demo PLAYER             the end-to-end proof-of-life query
+    deuce prompt                  the agent's SYSTEM_PROMPT draft, with sizes
 
 In Increment 1 Dagster wraps these same functions as software-defined assets;
 the CLI stays as the manual/backfill entry point.
@@ -118,6 +119,37 @@ def demo(
     typer.echo("  ".join(f"{c:>18}" for c in cols))
     for row in rows:
         typer.echo("  ".join(f"{v!s:>18}" for v in row))
+
+
+@app.command()
+def prompt(
+    live: Annotated[
+        bool, typer.Option("--live/--no-live", help="Merge live columns from Postgres.")
+    ] = True,
+    summary: Annotated[
+        bool, typer.Option("--summary", help="Sizes and unwritten sections only.")
+    ] = False,
+) -> None:
+    """Show the agent's SYSTEM_PROMPT draft: each section's size, and what is unwritten."""
+    from deuce.agent.prompts import SECTIONS, render_system_prompt, unwritten_sections
+    from deuce.agent.schema_context import build_schema_context
+
+    schema = build_schema_context(live=live)
+    rendered = render_system_prompt(schema, allow_unwritten=True)
+    if not summary:
+        typer.echo(rendered)
+        typer.echo("")
+
+    # ~4 characters per token is a rough English average, good enough to see
+    # which section is eating the budget.
+    typer.echo(f"{'section':<15}{'chars':>8}{'~tokens':>9}")
+    for name, text in [*SECTIONS.items(), ("schema", schema)]:
+        typer.echo(f"{name:<15}{len(text):>8,}{len(text) // 4:>9,}")
+    typer.echo(f"{'TOTAL':<15}{len(rendered):>8,}{len(rendered) // 4:>9,}")
+
+    missing = unwritten_sections()
+    if missing:
+        typer.secho(f"unwritten: {', '.join(missing)}", fg="yellow")
 
 
 def _select(source: str | None):

@@ -62,6 +62,7 @@ Two honesty rules on top:
     make refresh           materialize the daily job (small sources + dbt)
     make backfill PARTITION=…  reload ONE points file; `make partitions` lists them
     make lint test         ruff + pytest
+    uv run deuce prompt [--summary]  SYSTEM_PROMPT draft, section sizes, unwritten sections
 
 Ad-hoc SQL: `docker compose exec -T postgres psql -U tennis -d tennis -c "…"`
 (Postgres down -> `make up`). Every dbt model -- stg_, int_ and marts -- lives in
@@ -260,6 +261,10 @@ Decisions waiting for Kyle, in priority order (Claude builds once decided):
 - **`src/deuce/agent/prompts.py`** -- the agent's behavior: refusal policy,
   how it states caveats, which tiers it may quote. `docs/data-trust.md` is the
   grounding contract. Critical path to Increment 2.
+  Scaffolded: six sections (`ROLE` .. `STYLE`), each `UNWRITTEN` until written,
+  with guidance in the comments above each one. `render_system_prompt` refuses
+  while any section is unwritten. The schema context is generated
+  (`schema_context.py`: manifest descriptions + every live column).
 - **`dbt/models/marts/fct_shots.sql`** -- where the tokenizer lives (Python in
   `ingest/`, SQL in dbt, or the Rust parser as an oracle for one of those).
   Lesson 009. Unblocks the tactical direction mapping, serve+1, T6, T7.
