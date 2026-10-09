@@ -255,9 +255,6 @@ wants public dated commits, so that is worth fixing.
 
 Decisions waiting for Kyle, in priority order (Claude builds once decided):
 
-- **`mart_matchup` controls** -- surface-matched baseline vs. a surface split,
-  season matching, and whether one-match pairs stay. Measured: 77% of pairs
-  have exactly one charted match, and 235 have 5+. See `lessons/decisions.md`.
 - **`src/deuce/agent/prompts.py`** -- the agent's behavior: refusal policy,
   how it states caveats, which tiers it may quote. `docs/data-trust.md` is the
   grounding contract. Critical path to Increment 2.
