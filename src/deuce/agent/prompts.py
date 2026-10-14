@@ -75,11 +75,11 @@ UNWRITTEN = "TODO"
 #    have to invent.
 #  - The agent shows its SQL. Every answer is auditable; so is every mistake.
 #
-#  STILL OPEN (Kyle decides)
-#
-#  - Router inside this prompt, or a separate cheap classifier call? One call
-#    is faster and keeps context. Two are independently evaluable and can run
-#    a small model on the routing. You can only measure what you can isolate.
+#  - Routing is INLINE (D7): one structured call returns {route, sql, reason}
+#    (graph.AgentStep). The router must see the schema to know what the data
+#    can answer -- measured, 4/16 without it, 8/16 with it -- and a separate
+#    call with the schema costs ~6,900 more tokens. The route is a field, so
+#    it is still scored on its own. <routing> therefore lives in THIS prompt.
 #
 #  START SMALLER THAN YOU THINK. Settle <role>, <routing> and <grounding> for
 #  the SQL route first. Run the 16 cases in tennis-questions.yml. Let the

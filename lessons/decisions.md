@@ -122,3 +122,23 @@ measured on the same questions. No eval score is a baseline before then.
 **Say it out loud:** "The free tier gave me one model that answered reliably.
 I built on it, kept the model behind one function, and refused to call any
 score a baseline until I could compare it with the stronger model."
+
+## D7 -- Routing: a separate LLM call, or part of the main call?
+**Decided by:** Kyle   **Date:** 2026-10-14
+**Options:**
+- (a) Separate call, no schema. Cost: it cannot see what the data holds.
+- (b) Separate call with the schema. Cost: ~6,900 more input tokens per
+  question -- about double -- under free-tier token limits.
+- (c) Inline: one structured call returns {route, sql, reason}. Cost: routing
+  and SQL text share one prompt, so a routing change can move SQL quality too.
+**Evidence:** Flash-Lite, the four Route definitions only, all 16 questions,
+labels from each question's `difficulty` (a proxy). Without the schema: 4/16,
+~120 tokens, 0.58 s median, and the serve-speed question went to SQL. With the
+schema: 8/16, ~6,900 tokens, 1.23 s, and serve speed was refused. Live with
+(c): guard-01 refused ("does not store serve speed"); serve-01 ran after two
+failed queries were sent back -- the retry loop's first live run.
+**Chosen:** (c). The schema is what makes routing work, and inline gets it for
+free. The route stays a field, so it is still logged and scored on its own.
+**Say it out loud:** "A router that can't see the data can't know what the
+data can't answer. I measured that -- 4 of 16 without the schema, 8 with -- so
+routing went into the main call, and the route stayed a field I can score."
