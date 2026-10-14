@@ -99,3 +99,26 @@ its own baseline.
 **Say it out loud:** "Most pairs played once, so splitting by surface left
 nothing to measure. I weighted the baseline to the pair's surface mix instead,
 and measured that the bias I removed was a tenth of the effect."
+
+## D6 -- Which LLM does the agent use, and when is the eval baseline fixed?
+**Decided by:** Kyle   **Date:** 2026-10-14
+**Options:**
+- (a) Gemini Flash-Lite now, fix the baseline model later. Cost: the decision
+  takes two steps.
+- (b) Flash-Lite as the eval baseline now. Cost: weaker schema linking, so the
+  eval may measure the model's limits instead of the prompt.
+- (c) Wait for Gemini Flash. Cost: it failed every call today.
+- (d) A paid API. Cost: money and a second key; reliable availability.
+**Evidence:** `scripts/probe_models.py`, same 3 SQL questions, same ~6,880-token
+schema context, a throwaway one-line instruction. `gemini-3.5-flash-lite`:
+available on every call, 1.2-1.7 s, 2 of 3 queries ran (one used a column from
+the wrong table). `gemini-3.8-flash`: 0 of 9 calls (503 high demand, then 429).
+`gemini-pro-latest`: 429 on the first call, naming the free-tier quotas.
+`gemini-2.5-flash`: retired for new keys (404).
+**Chosen:** (a). The graph and the eval harness do not depend on the model --
+`get_chat_model()` is the only place it is named -- so building on Flash-Lite
+loses nothing. **Still open:** the baseline model, decided once Flash can be
+measured on the same questions. No eval score is a baseline before then.
+**Say it out loud:** "The free tier gave me one model that answered reliably.
+I built on it, kept the model behind one function, and refused to call any
+score a baseline until I could compare it with the stronger model."

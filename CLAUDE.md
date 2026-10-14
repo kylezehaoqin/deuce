@@ -247,11 +247,12 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
 
 ## Open work
 
-**State:** Increments 0 and 1 complete. `dbt build` 106 pass / 1 warn, pytest 31.
+**State:** Increments 0 and 1 complete. `dbt build` 106 pass / 1 warn, pytest 40.
 Marts: `fct_points` -> `fct_serves` / `fct_games`, `mart_serve_patterns`,
 `dim_players`, `dim_charters`, `mart_data_coverage`. Dagster orchestrates
-ingest + dbt. Everything on `main`, **not pushed to a remote yet** -- the brief
-wants public dated commits, so that is worth fixing.
+ingest + dbt. Everything on `main`, pushed to `github.com/kylezehaoqin/deuce`;
+CI runs lint, tests and `dbt compile` on every push. The agent's LLM is Gemini
+via `src/deuce/agent/llm.py`: `GOOGLE_API_KEY` and `LLM_MODEL` in `.env`.
 
 Decisions waiting for Kyle, in priority order (Claude builds once decided):
 

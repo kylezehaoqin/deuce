@@ -4,7 +4,7 @@ Increment 2 wires this into a LangGraph graph. The graph is mechanical; the
 routing prompt is the part that decides whether the product works, so it lives
 here on its own and gets its own eval cases.
 
-    SYSTEM_PROMPT is written by hand. See the TODO below.
+    Kyle decides what each section says; Claude writes the text. See below.
 """
 
 from __future__ import annotations
@@ -37,20 +37,24 @@ class Route(StrEnum):
 # agent's view of the schema can never drift from the warehouse.
 SCHEMA_CONTEXT_PLACEHOLDER = "{schema_context}"
 
-# Marks a section Kyle has not written yet. render_system_prompt() refuses to
+# Marks a section not written yet. render_system_prompt() refuses to
 # render while any section still holds it, so a half-written prompt can never
 # reach a model by accident.
 UNWRITTEN = "TODO"
 
 
 # ============================================================================
-#  TODO(kyle): write SYSTEM_PROMPT, one section at a time.
+#  SYSTEM_PROMPT -- written one section at a time.
 #
-#  WHY THIS ONE IS YOURS
+#  WHO DOES WHAT (CLAUDE.md working agreement)
 #
-#  This prompt is where the project's two layers meet. It is also the single
-#  artifact an interviewer can read in 60 seconds and tell whether you have
-#  actually built an agent or just called an LLM. Do not let a model write it.
+#  This prompt is where the project's two layers meet, and the artifact an
+#  interviewer reads to judge whether an agent was BUILT or an LLM was called.
+#  So every judgment call in it is Kyle's: where the routing line sits, the
+#  refusal floor, which tiers may be quoted, the answer shape. Claude presents
+#  each one with measured evidence, Kyle decides, Claude writes the text, and
+#  the decision goes in lessons/decisions.md. The comments above each section
+#  list the decisions that section needs.
 #
 #  THE SHAPE
 #
@@ -71,13 +75,13 @@ UNWRITTEN = "TODO"
 #    have to invent.
 #  - The agent shows its SQL. Every answer is auditable; so is every mistake.
 #
-#  STILL YOURS TO SETTLE
+#  STILL OPEN (Kyle decides)
 #
 #  - Router inside this prompt, or a separate cheap classifier call? One call
 #    is faster and keeps context. Two are independently evaluable and can run
 #    a small model on the routing. You can only measure what you can isolate.
 #
-#  START SMALLER THAN YOU THINK. Write <role>, <routing> and <grounding> for
+#  START SMALLER THAN YOU THINK. Settle <role>, <routing> and <grounding> for
 #  the SQL route first. Run the 16 cases in tennis-questions.yml. Let the
 #  failures tell you what <refusal> and <style> need to say. A prompt written
 #  against observed failures beats one written against imagined ones.

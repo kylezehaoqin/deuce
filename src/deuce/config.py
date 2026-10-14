@@ -5,6 +5,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -27,6 +28,12 @@ class Settings(BaseSettings):
     mcp_base_url: str = (
         "https://raw.githubusercontent.com/JeffSackmann/tennis_MatchChartingProject/master"
     )
+
+    # The agent's LLM. The key lives in .env and never in code or logs
+    # (SecretStr hides it in reprs). The model has NO default: choosing it is a
+    # decision (lessons/decisions.md), and an eval baseline belongs to one model.
+    google_api_key: SecretStr | None = None
+    llm_model: str | None = None
 
     @property
     def dsn(self) -> str:
