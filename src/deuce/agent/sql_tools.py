@@ -23,8 +23,9 @@ from sqlglot import exp
 
 from deuce.config import settings
 
-# Rows returned to the model. Enough to answer and to cite; a model asked to
-# read 10,000 rows will summarise them badly. `truncated` says when it bit.
+# Rows returned to the model, and the most ever transferred from Postgres (a
+# server-side cursor; see run_sql). Enough to answer and to cite; a model asked
+# to read 10,000 rows will summarise them badly. `truncated` says when it bit.
 ROW_LIMIT = 200
 
 
@@ -71,7 +72,11 @@ def run_sql(sql: str, row_limit: int = ROW_LIMIT) -> QueryResult:
     if problem:
         return QueryResult(sql=sql, error=problem)
     try:
-        with psycopg.connect(settings.agent_dsn) as conn, conn.cursor() as cur:
+        # A NAMED cursor is server-side: Postgres sends only the rows we fetch.
+        # The default client-side cursor downloads the whole result first --
+        # measured, `select * from fct_points` kept 200 rows but took the
+        # process from 49 MB to 1,845 MB. The cap must hold on the wire.
+        with psycopg.connect(settings.agent_dsn) as conn, conn.cursor(name="agent") as cur:
             cur.execute(sql)
             columns = [d.name for d in cur.description or []]
             rows = cur.fetchmany(row_limit + 1)

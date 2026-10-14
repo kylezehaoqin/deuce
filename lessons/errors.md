@@ -487,3 +487,26 @@ metadata and 8 matches contradict it (labelled 3, played 4–5 sets). A match-wi
 rule of "first to best_of/2+1 sets" then gives those matches TWO winners. Caught
 by writing the prediction "match_swing at 1-1 in best-of-3 is exactly 1.0" and
 getting 0.9986.
+
+## E20
+**Symptom:** a background security review of the agent's SQL runner flagged a
+"resource-cap-defeat". Measured: `select * from fct_points` returned 200 rows,
+as capped, but took the Python process from 49 MB to 1,845 MB.
+
+**Cause:** psycopg's default cursor is client-side. `execute()` downloads the
+whole result into Python; `fetchmany(201)` then takes a slice of what is
+already in memory. The row cap limited what the MODEL saw, not what the
+process loaded. Postgres's 10 s timeout did not help: the query finished in 6 s.
+
+What did hold, tested the same way: `set_config('statement_timeout','0')`
+inside the query does not stop the timer already started for that statement,
+and `set_config('transaction_read_only','off')` fails with "read-write mode
+must be set before any query".
+
+**Fix:** a named (server-side) cursor. Postgres sends only the rows fetched:
+0.02 s and 52 MB for the same query.
+
+**Rule:** **a cap must sit where the cost is paid.** A limit applied after the
+expensive step only hides the expense. Same family as E11 (an index outside
+model config that vanished on rebuild): the guard was real, but it was in the
+wrong place to protect anything.
