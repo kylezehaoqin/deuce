@@ -33,6 +33,7 @@ agent = [
     "langfuse>=2.50",
     "pgvector>=0.3",
     "langchain-google-genai>=4.4.0",
+    "sqlglot>=28.0.0",
 ]
 dev = [
     "pytest>=8.3",

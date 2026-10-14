@@ -35,10 +35,22 @@ class Settings(BaseSettings):
     google_api_key: SecretStr | None = None
     llm_model: str | None = None
 
+    # The agent's own read-only role (sql/005_agent_role.sql). Dev defaults,
+    # like the postgres_* ones above.
+    agent_db_user: str = "deuce_agent"
+    agent_db_password: SecretStr = SecretStr("deuce_agent")
+
     @property
     def dsn(self) -> str:
         return (
             f"postgresql://{self.postgres_user}:{self.postgres_password}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        )
+
+    @property
+    def agent_dsn(self) -> str:
+        return (
+            f"postgresql://{self.agent_db_user}:{self.agent_db_password.get_secret_value()}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 

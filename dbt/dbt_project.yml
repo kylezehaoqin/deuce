@@ -23,3 +23,8 @@ models:
       # Tables: marts are what the agent queries at request time, so they get
       # to be physical and indexable.
       +materialized: table
+      # The agent's role (sql/005_agent_role.sql) may read the marts and
+      # nothing else. dbt re-applies the grant on every rebuild, which a manual
+      # GRANT would not survive -- the same reason indexes are model config.
+      +grants:
+        select: ['deuce_agent']

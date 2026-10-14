@@ -592,6 +592,7 @@ agent = [
     { name = "langfuse" },
     { name = "langgraph" },
     { name = "pgvector" },
+    { name = "sqlglot" },
 ]
 dev = [
     { name = "pytest" },
@@ -624,6 +625,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3" },
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.7" },
+    { name = "sqlglot", marker = "extra == 'agent'", specifier = ">=28.0.0" },
     { name = "structlog", specifier = ">=24.4" },
     { name = "typer", specifier = ">=0.12" },
 ]
