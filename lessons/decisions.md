@@ -142,3 +142,30 @@ free. The route stays a field, so it is still logged and scored on its own.
 **Say it out loud:** "A router that can't see the data can't know what the
 data can't answer. I measured that -- 4 of 16 without the schema, 8 with -- so
 routing went into the main call, and the route stayed a field I can score."
+
+## D8 -- Where is the routing line? (expected route per eval question)
+**Decided by:** Kyle   **Date:** 2026-10-15
+**Options, per boundary case:**
+- direction-01 (+EV of the backhand down-the-line): (a) sql, answer the
+  frequency and caveat the rest; (b) refuse. Chosen (a).
+- direction-03 (who redirects most): (a) refuse until fct_shots; (b) sql with
+  down-the-line share as a stand-in. Chosen (a): a labelled wrong measure can
+  still mislead.
+- semantic-01 (momentum-swing comebacks): (a) sql from the score; (b) hybrid
+  later; (c) semantic as labelled. Chosen (a).
+- "Why did X lose?": (a) sql, what happened and not why; (b) refuse. Chosen (a).
+- The general rule: answer when a LITERAL part of the question is answerable,
+  with a caveat; refuse when only a related stand-in is. Rejected: "answer
+  whenever anything related helps" (answers what was not asked) and "refuse
+  unless the core is answerable" (inconsistent with direction-01).
+**Evidence:** no table has winners/errors per direction or the previous shot's
+direction (fct_shots is not built). Charter notes exist on 4,784 of 11,819
+matches but are mostly procedural; "momentum" or "comeback" appears on 16
+points. Every point's score and leverage is in the data.
+**Result:** 16 labels in evals/route_labels.yml, and <routing> written from
+them. scripts/eval_routes.py: 12/16 on two runs (upper bound -- the rules came
+from these questions). Every miss is refuse-where-sql-was-chosen. Stable
+misses: rally-02, direction-02, pressure-02. Flaky: semantic-01, direction-01.
+**Say it out loud:** "I decided the line case by case, then found the rule
+that explained my choices: answer what was literally asked, refuse what can
+only be stood in for. The first prompt from that rule refused too much."

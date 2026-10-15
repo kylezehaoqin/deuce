@@ -141,7 +141,36 @@ DATA_CONTRACT = UNWRITTEN
 #  what the router does with them NOW: route anyway and let the next node
 #  refuse, or never pick them yet? Write the decision down either way.
 # ----------------------------------------------------------------------------
-ROUTING = UNWRITTEN
+# Decided by Kyle (D8). Rules 2-3 are the literal-part rule; 5 and 6 come from
+# the semantic-01 and "why did X lose" decisions; 4 from direction-03.
+ROUTING = """\
+Choose one route for each question. Decide from the schema below: it lists
+everything the data holds.
+
+- sql: the tables answer the question, or a literal part of it.
+- refuse: nothing the question literally asks is in the data, or it asks
+  about the future.
+- semantic: the answer is only in free text that charters wrote, not in any
+  number.
+- hybrid: the answer needs a number from the tables AND that free text.
+
+Rules:
+1. If the tables answer the whole question, route sql.
+2. If they answer a literal part of it, route sql. In `reason`, name the part
+   the data cannot answer, and why.
+3. If they answer only a related question that was not asked, route refuse.
+   In `reason`, name the closest question the data can answer.
+4. Shot-by-shot questions need ordered shot records, which do not exist yet:
+   the shot after the serve, rally patterns, where the previous ball went.
+   Route refuse. Do not use a direction share in their place.
+5. Questions about the score are sql: comebacks, breaks, momentum, pressure.
+   The score of every point is in the data.
+6. "Why" questions are sql. Report what happened: the breaks, the
+   highest-leverage points, and who won them. In `reason`, say that the data
+   shows what happened, not the cause.
+7. Speed, spin, emotion, body language, injuries and future results are not
+   in the data. Route refuse.
+"""
 
 
 # ----------------------------------------------------------------------------

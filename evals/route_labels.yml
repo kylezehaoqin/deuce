@@ -1,0 +1,30 @@
+# Expected route per question in tennis-questions.yml (private, gitignored).
+# Ids and routes only -- no question text, so this file can be public.
+#
+# Every label is Kyle's decision (lessons/decisions.md, D8). The rules:
+#   1. A question the marts answer -> sql.
+#   2. A literal PART answerable -> sql, with a caveat for the rest.
+#   3. Only a related stand-in answerable -> refuse.
+#   4. Not in the data at all, or about the future -> refuse.
+#   5. "Why" questions -> sql: report what happened, never causes.
+#
+# semantic-01 is labelled sql although the question file says sql+semantic:
+# comebacks are visible in the score, and charter notes mention momentum or
+# comeback on only 16 points.
+
+serve-01: {route: sql, rule: 1}
+serve-02: {route: refuse, rule: 3, why: "the next shot needs fct_shots; win rate after a wide serve is not what was asked"}
+serve-03: {route: sql, rule: 1}
+rally-01: {route: sql, rule: 1, why: "the question's buckets differ from mart_rally_shape; fct_points.rally_length has the raw count"}
+rally-02: {route: sql, rule: 1}
+direction-01: {route: sql, rule: 2, why: "frequency answerable; winners/errors per direction need fct_shots"}
+direction-02: {route: sql, rule: 2, why: "share to the backhand from direction + handedness; win rate by target needs fct_shots"}
+direction-03: {route: refuse, rule: 3, why: "a redirect depends on the previous shot's direction"}
+pressure-01: {route: sql, rule: 1}
+pressure-02: {route: sql, rule: 1}
+pressure-03: {route: sql, rule: 1}
+matchup-01: {route: sql, rule: 2, why: "serve predictability answerable; rally patterns need fct_shots"}
+matchup-02: {route: sql, rule: 1}
+semantic-01: {route: sql, rule: 1, why: "comebacks from the score; leverage marks the turning point"}
+guard-01: {route: refuse, rule: 4, why: "serve speed is not charted"}
+guard-02: {route: refuse, rule: 4, why: "a prediction about the future"}

@@ -47,7 +47,9 @@ class AgentStep(BaseModel):
         default=None, description="One PostgreSQL SELECT query. Required when route is 'sql'."
     )
     reason: str | None = Field(
-        default=None, description="Why this route. Required when route is not 'sql'."
+        default=None,
+        description="Why this route. For sql, name any part of the question the data "
+        "cannot answer. Required when route is not 'sql'.",
     )
 
 
