@@ -22,20 +22,38 @@ Live sizes:
 
 | Object | Kind | Rows | Size |
 |---|---|---:|---:|
-| `fct_serves` | table | 2,578,594 | 706 MB |
-| `raw.mcp_points` | table | 1,875,004 | 563 MB |
-| `fct_points` | table | 1,874,950 | 500 MB |
+| `fct_serves` | table | 2,577,836 | 745 MB |
+| `raw.mcp_points` | table | 1,875,132 | 576 MB |
+| `fct_points` | table | 1,875,132 | 566 MB |
+| `mart_pressure_index` | table | 1,875,130 | 565 MB |
 | `raw.mcp_stats_shot_types` | table | 537,695 | 163 MB |
-| `fct_games` | table | 296,286 | 77 MB |
+| `fct_games` | table | 296,286 | 82 MB |
 | `raw.mcp_stats_rally` | table | 151,226 | 46 MB |
+| `raw.mcp_stats_serve_direction` | table | 70,799 | 38 MB |
 | `raw.mcp_stats_shot_direction` | table | 93,388 | 29 MB |
-| `raw.mcp_stats_serve_direction` | table | 70,799 | 23 MB |
+| `int_player_match_style` | table | 23,600 | 13 MB |
 | `mart_serve_patterns` | table | 29,294 | 6.7 MB |
+| `mart_matchup` | table | 15,558 | 6.2 MB |
+| `dim_charters` | `charter_name` | one volunteer charter, with how much detail they record |
+| `mart_data_coverage` | table | 19,569 | 4.8 MB |
 | `raw.mcp_matches` | table | 11,819 | 4.0 MB |
+| `mart_rally_shape` | table | 18,914 | 3.4 MB |
+| `mart_player_style` | table | 8,830 | 2.3 MB |
 | `dim_players` | table | 1,739 | 576 kB |
+| `dim_charters` | table | 196 | 72 kB |
 | `raw.error_records` | table | 22 | 80 kB |
-| `raw.ingest_runs` | table | 20 | 32 kB |
-| `stg_*`, `int_*` | **views** | — | 0 (virtual) |
+| `raw.ingest_runs` | table | 23 | 32 kB |
+| `stg_*`, `int_point_*` | **views** | — | 0 (virtual) |
+
+`int_player_match_style` is the one intermediate TABLE: two marts read it, and
+its `fct_serves` aggregation is the expensive part of the build.
+
+**Access.** The agent connects as `deuce_agent` (`sql/005_agent_role.sql`):
+SELECT on the `fct_`/`dim_`/`mart_` tables only (dbt re-grants on every build
+via `grants` config), read-only sessions, a 10 s statement timeout. Staging,
+intermediate and `raw` return "permission denied". Tested by breaking it on
+purpose: `commit; drop table ...` fails as read-only, and fails again with
+"must be owner" when read-only is switched off.
 
 ---
 
@@ -66,10 +84,10 @@ flowchart TB
 
   subgraph DBT["dbt — analytics_analytics"]
     D1["stg_* (VIEWS)<br/>cast · rename · 1:1"]
-    D2["int_* (VIEW)<br/>join · derive · parse"]
-    D3["dim_players (TABLE)"]
+    D2["int_point_* (VIEWS)<br/>join · derive · parse<br/>int_player_match_style (TABLE)"]
+    D3["dim_players · dim_charters (TABLES)"]
     D4["fct_points · fct_serves<br/>fct_games (TABLES)"]
-    D5["mart_serve_patterns<br/>(TABLE, aggregated)"]
+    D5["mart_serve_patterns · mart_rally_shape<br/>mart_pressure_index · mart_data_coverage<br/>mart_player_style · mart_matchup<br/>(TABLES)"]
     D6["fct_shots<br/>(disabled — needs tokenizer)"]
   end
 
@@ -79,11 +97,11 @@ flowchart TB
     E3["assert_serve_patterns_matches_fact<br/>(aggregate drift)"]
   end
 
-  subgraph AGENT["Layer 2 — not built yet"]
-    F1["LangGraph router"]
-    F2["text-to-SQL"]
-    F3["pgvector similarity"]
-    F4["grounded answer + citations"]
+  subgraph AGENT["Layer 2 — partly built (src/deuce/agent/)"]
+    F1["decide: route + SQL<br/>one structured call (D7)"]
+    F2["run_sql as deuce_agent<br/>read-only, 10 s, 200 rows"]
+    F3["pgvector similarity<br/>(not built)"]
+    F4["grounded answer + citations<br/>(not built)"]
   end
 
   A1 & A2 & A3 --> B1 --> B2 --> B3
@@ -101,9 +119,11 @@ flowchart TB
   D2 --> E2
   D5 --> E3
   D3 & D4 & D5 --> F2
-  D3 --> F3
-  F1 --> F2 & F3
-  F2 & F3 --> F4
+  D5 --> F3
+  F1 --> F2
+  F2 -->|error: retry, max 3| F1
+  F1 -.-> F3
+  F2 & F3 -.-> F4
 ```
 
 **The layer contract**, and why each boundary exists:
@@ -115,6 +135,7 @@ flowchart TB
 | `stg_` → `int_` | joins and derivations. No aggregation | review |
 | `int_` → `fct_`/`mart_` | aggregation and denormalisation. What the agent queries | schema tests |
 | oracles → tests only | an oracle may not feed the mart whose parser it validates | review (`docs/marts.md` §6) |
+| marts → agent | SELECT on `fct_`/`dim_`/`mart_` only; read-only; 10 s | `deuce_agent` role + dbt `grants` |
 
 ---
 
@@ -548,6 +569,12 @@ determine every other column in the table."
 | `fct_games` | `(match_id, game_number)` | one service game |
 | `fct_points` | `(match_id, point_number)` | one point, both serves as columns |
 | `fct_serves` | `(match_id, point_number, serve_number)` | **one serve, faults included** |
+| `mart_data_coverage` | `(player_name, surface, season, coverage_grain)` | charting coverage for one player cell, at one of four grains |
+| `int_player_match_style` | `(match_id, player_name)` | style counts for one player in one match; no rates |
+| `mart_rally_shape` | `(player_name, surface, shape_grain, rally_bucket)` | win rate in one rally bucket, with the slope |
+| `mart_pressure_index` | `(match_id, point_number)` | one point, with its leverage on the match |
+| `mart_player_style` | `(player_name, season, surface)` | one style vector, rates + their counts |
+| `mart_matchup` | `(player_name, opponent_name)` | one pair from one side: rate, baseline, delta |
 | `mart_serve_patterns` | `(server, court_side, pressure, serve_number, parse_confidence)` | one pre-aggregated cell |
 | `fct_shots` | `(match_id, point_number, shot_number)` | **not built** — needs the tokenizer |
 

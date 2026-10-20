@@ -10,8 +10,7 @@ measures the models on the same schema context the agent will get, before the
 real prompt exists. Do not compare these numbers with eval runs on the real
 prompt -- they are a different baseline.
 
-Questions come from the private tennis-questions.yml (gitignored). Only their
-ids are printed.
+Questions come from questions.yml. Only their ids are printed.
 """
 
 from __future__ import annotations
@@ -44,7 +43,7 @@ THROWAWAY_INSTRUCTION = (
 
 
 def load_questions() -> list[tuple[str, str]]:
-    data = yaml.safe_load((REPO_ROOT / "tennis-questions.yml").read_text())
+    data = yaml.safe_load((REPO_ROOT / "questions.yml").read_text())
     by_id = {q["id"]: q["question"] for q in data["questions"]}
     return [(qid, by_id[qid].replace("{player}", PLAYER)) for qid in QUESTION_IDS]
 

@@ -1,5 +1,5 @@
-# Expected route per question in tennis-questions.yml (private, gitignored).
-# Ids and routes only -- no question text, so this file can be public.
+# Expected route per question in questions.yml (public; the same 16 questions
+# with identical question text as the gitignored tennis-questions.yml).
 #
 # Every label is Kyle's decision (lessons/decisions.md, D8). The rules:
 #   1. A question the marts answer -> sql.

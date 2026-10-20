@@ -4,8 +4,7 @@
 
 Sends <routing> plus the schema -- the sections written so far -- through the
 agent's structured decision step. No SQL runs. Labels come from
-evals/route_labels.yml (Kyle's decisions, D8); question text from the private
-tennis-questions.yml.
+evals/route_labels.yml (Kyle's decisions, D8); question text from questions.yml.
 
 WARNING: the <routing> rules were written from decisions about these same 16
 questions. The score is an UPPER BOUND, not an unbiased estimate. A held-out
@@ -33,7 +32,7 @@ def main(model: str | None) -> None:
     labels = yaml.safe_load((REPO_ROOT / "evals" / "route_labels.yml").read_text())
     questions = {
         q["id"]: q["question"].replace("{player}", PLAYER)
-        for q in yaml.safe_load((REPO_ROOT / "tennis-questions.yml").read_text())["questions"]
+        for q in yaml.safe_load((REPO_ROOT / "questions.yml").read_text())["questions"]
     }
     system = assemble({"routing": ROUTING}).replace(
         SCHEMA_CONTEXT_PLACEHOLDER, build_schema_context()

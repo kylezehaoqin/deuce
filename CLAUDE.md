@@ -247,40 +247,48 @@ Log errors by *class*, not by fix. The fix is local; the class recurs.
 
 ## Open work
 
-**State:** Increments 0 and 1 complete. `dbt build` 106 pass / 1 warn, pytest 40.
-Marts: `fct_points` -> `fct_serves` / `fct_games`, `mart_serve_patterns`,
-`dim_players`, `dim_charters`, `mart_data_coverage`. Dagster orchestrates
-ingest + dbt. Everything on `main`, pushed to `github.com/kylezehaoqin/deuce`;
-CI runs lint, tests and `dbt compile` on every push. The agent's LLM is Gemini
-via `src/deuce/agent/llm.py`: `GOOGLE_API_KEY` and `LLM_MODEL` in `.env`.
+**State:** Increments 0 and 1 complete; Increment 2 in progress. `dbt build`
+106 pass / 1 warn, pytest 55. All marts in `docs/schema.md` §1. Everything on
+`main`, pushed to `github.com/kylezehaoqin/deuce`; CI runs lint, tests and
+`dbt compile` on every push.
+
+**The agent so far** (`src/deuce/agent/`): `llm.py` (Gemini Flash-Lite, D6;
+`GOOGLE_API_KEY`, `LLM_MODEL` in `.env`) -> `graph.py` (`decide` returns
+`{route, sql, reason}` in one structured call, D7 -> `run_sql` -> retry on
+error, max 3) -> `sql_tools.py` (sqlglot one-statement check; runs as
+`deuce_agent` with a server-side cursor, 200-row cap, E20). The role
+(`sql/005_agent_role.sql`) can SELECT the marts only, read-only, 10 s.
+Not built: the answer node (needs `<grounding>`, `<style>`) and retrieval for
+`semantic`/`hybrid` (Increment 3).
+
+**Evals:** `evals/route_labels.yml` (Kyle's labels, D8);
+`uv run python -u scripts/eval_routes.py` scores routing alone -- 12/16 on two
+runs, an upper bound, every miss a refusal where sql was expected.
+`scripts/probe_models.py` is the D6 model comparison. Run each eval twice: two
+questions flip between runs at temperature 0.
 
 Decisions waiting for Kyle, in priority order (Claude builds once decided):
 
-- **`src/deuce/agent/prompts.py`** -- the agent's behavior: refusal policy,
-  how it states caveats, which tiers it may quote. `docs/data-trust.md` is the
-  grounding contract. Critical path to Increment 2.
-  Scaffolded: six sections (`ROLE` .. `STYLE`), each `UNWRITTEN` until written,
-  with guidance in the comments above each one. `render_system_prompt` refuses
-  while any section is unwritten. The schema context is generated
-  (`schema_context.py`: manifest descriptions + every live column).
+- **The SYSTEM_PROMPT sections** (`src/deuce/agent/prompts.py`). `<routing>` is
+  written (D8). Next: fix its over-refusal (rewording within D8, one change at
+  a time, two runs each); then `<grounding>` (the answer shape -- unblocks the
+  answer node), `<role>`, `<refusal>`, `<style>`, `<data_contract>`.
+  `docs/data-trust.md` is the grounding contract.
+- **The D6 baseline model.** Flash failed 9 of 9 calls on 2026-10-14. Re-run
+  `scripts/probe_models.py gemini-3.8-flash`; no score is a baseline until then.
 - **`dbt/models/marts/fct_shots.sql`** -- where the tokenizer lives (Python in
   `ingest/`, SQL in dbt, or the Rust parser as an oracle for one of those).
-  Lesson 009. Unblocks the tactical direction mapping, serve+1, T6, T7.
-- ~~Three review corrections to lesson 005~~ -- **applied**, and logged as my
-  errors rather than edits: median is 2 not 1 (all eras mean 2.70, p25 -3,
-  p75 +8); charter identity explains **23.7%** of residual variance, not the
-  residual (total 111.6, within-charter 86.4, between-charter 26.5) -- errors
-  E14; and the physical rationale is refuted by forced net errors being counted
-  171,427 times, so the mechanism is now recorded as **unknown** -- errors E15.
+  Lesson 009. Unblocks the tactical direction mapping, serve+1, T6, T7, and
+  three questions D8 routes to refuse or a partial answer.
 
 Mine, queued:
 
+- Column descriptions: only 41% of mart columns have one, and the agent writes
+  SQL from them. direction-02 misroutes because no description says that
+  direction plus handedness gives the target wing.
 - The pgvector leg (`emb_player_style`) and the T9 retrodiction eval over
-  `mart_matchup` -- see `docs/marts.md`. `mart_rally_shape` and
-  `mart_pressure_index` are built (the latter's `hold_prob` written by Claude at
-  Kyle's request -- parametric, reasoning in H12; Kyle approved it, D1).
-  `mart_player_style` is built too, its feature vector also written by Claude
-  at Kyle's request (reasons in the `features` CTE; Kyle approved it, D3).
-  `mart_matchup` is built on Kyle's three decisions: surface-matched baseline,
-  no season match, keep one-match pairs.
-- The pgvector leg once a style mart exists.
+  `mart_matchup` -- see `docs/marts.md`.
+
+Done, for reference: all four queued marts are built (`mart_rally_shape`,
+`mart_pressure_index` D1/D2, `mart_player_style` D3/D4, `mart_matchup` D5);
+the three lesson 005 corrections are applied (errors E14, E15).

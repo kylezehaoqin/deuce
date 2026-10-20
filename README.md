@@ -22,14 +22,16 @@ what this closes.
 |---|---|---|
 | **0** | Repo, Postgres ingest, one question answered end-to-end | ✅ done |
 | **1** | dbt spine + Dagster orchestration + tests | ✅ done |
-| **2** | LangGraph text-to-SQL agent; every answer cites its source rows | ⚪ next |
+| **2** | LangGraph text-to-SQL agent; every answer cites its source rows | 🟡 in progress |
 | **3** | Eval harness + pgvector similarity + Langfuse tracing | ⚪ |
 | **4** | MCP server exposing the analytics as tools | ⚪ |
 
-**The warehouse is built; the agent is not.** Everything below was produced by
-SQL against these marts, not by an LLM. Nothing here is claimed until it runs —
-`dbt build` runs 19 models and 88 tests green (one known warning: 305 points
-whose match is missing upstream); `pytest` 31.
+**The warehouse is built; the agent is half built.** It routes a question,
+writes SQL, runs it as a read-only role and corrects its own errors -- but it
+does not write answers yet. Everything below was produced by SQL against these
+marts, not by an LLM. Nothing here is claimed until it runs -- `dbt build` runs
+19 models and 88 tests green (one known warning: 305 points whose match is
+missing upstream); `pytest` 55.
 
 ```
  11,819 matches   1,875,132 points   2,577,836 serves   296,286 games   1,739 players
@@ -113,6 +115,14 @@ queryable warehouse is most of the work.
 those marts, disclosing its sample size and confidence tier, and refusing what
 the data can't support. An eval harness scores it so "it got better" is a
 measurement.
+
+Built so far: one structured call picks the route and writes the SQL
+(`decide`); the SQL runs as `deuce_agent`, a role that can only read the marts,
+with a 10 s timeout and a 200-row cap enforced on the wire; a failed query goes
+back to the model with its error, at most three times. The routing rules are
+the first written prompt section, scored against 16 hand-labelled questions:
+12/16, with every miss a refusal where an answer was expected. Every judgment
+call is logged with the options it rejected in `lessons/decisions.md`.
 
 ```mermaid
 flowchart LR
@@ -204,7 +214,12 @@ src/deuce/
   cli.py                  the `deuce` command
   ingest/                 SourceSpec per CSV · Pydantic validation · loader
   orchestration/          Dagster assets, schedules, asset checks
-  agent/prompts.py        routing + grounding prompt        (Increment 2)
+  agent/                  Increment 2: the LangGraph agent
+    prompts.py            SYSTEM_PROMPT, one tagged section per job
+    schema_context.py     the schema the model sees (manifest + live columns)
+    graph.py              decide (route + SQL) -> run_sql -> retry
+    sql_tools.py          one-statement check; read-only runner, rows capped
+    llm.py                the one place a model is named (Gemini, D6)
 
 dbt/models/
   staging/                1:1 with raw — cast, rename, nothing else
@@ -220,7 +235,7 @@ dbt/macros/               rally length, serve direction, the shared style rates
 dbt/tests/                oracle agreement · fact-vs-aggregate drift · index existence
 
 sql/
-  00N_*.sql               forward-only migrations
+  00N_*.sql               forward-only migrations (005: the agent's read-only role)
   investigations/         measurement harnesses; one CTE is the hypothesis
 
 docs/
@@ -232,6 +247,8 @@ lessons/                  why it's built this way — plus a hypothesis log and
                           an error log, including the refuted and the wrong
 notes/                    concept reference and writing backlog
 questions.yml             16 questions: demo script, mart spec, eval set
+evals/route_labels.yml    the expected route for each question (D8)
+scripts/                  probe_models.py (D6 evidence) · eval_routes.py
 ```
 
 ---
@@ -310,4 +327,5 @@ No match data is committed here; `make ingest` fetches it from the source.
 ## Stack
 
 PostgreSQL 16 · pgvector · dbt · Dagster · psycopg3 · Pydantic · Typer
-· LangGraph, Langfuse, Ollama *(Increment 2+)*
+· LangGraph, Gemini via langchain-google-genai, sqlglot *(Increment 2)*
+· Langfuse *(Increment 3)*
