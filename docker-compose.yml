@@ -10,8 +10,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-tennis}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tennis}
     ports:
-      # 5433 on the host so this never fights a local Postgres on 5432.
-      - "${POSTGRES_PORT:-5433}:5432"
+      # 5434 on the host: 5432 is a common local Postgres, and 5433 collided with
+      # another project's container (swingsmith-dev-auth-db).
+      - "${POSTGRES_PORT:-5434}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       # Anything in here runs once, on first boot of an empty volume.

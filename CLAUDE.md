@@ -49,7 +49,7 @@ Two honesty rules on top:
 ## Commands
 
     make help              every target
-    make up / down         Postgres + pgvector on :5433
+    make up / down         Postgres + pgvector on :5434
     make db-init           apply sql/*.sql (idempotent)
     make ingest            matches + serve-direction stats (fast)
     make ingest-points     point-by-point files (178 MB, ~1.9M points, ~60s)

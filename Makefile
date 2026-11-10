@@ -21,7 +21,7 @@ setup:  ## Create the venv and install deps (pins Python 3.12 -- dbt/dagster do 
 up:  ## Start Postgres + pgvector
 	docker compose up -d
 	@until docker compose exec -T postgres pg_isready -U $${POSTGRES_USER:-tennis} >/dev/null 2>&1; do sleep 1; done
-	@echo "postgres ready on port $${POSTGRES_PORT:-5433}"
+	@echo "postgres ready on port $${POSTGRES_PORT:-5434}"
 
 down:  ## Stop Postgres (keeps the data volume)
 	docker compose down

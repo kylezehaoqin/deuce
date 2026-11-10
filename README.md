@@ -175,7 +175,7 @@ Requires Docker and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 make setup          # venv on Python 3.12 (dbt/dagster don't support 3.13 yet)
-make up             # Postgres 16 + pgvector on :5433
+make up             # Postgres 16 + pgvector on :5434
 make db-init        # schemas, extensions, raw tables
 
 make ingest         # matches + serve stats (~30s)

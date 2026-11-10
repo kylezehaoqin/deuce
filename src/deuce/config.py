@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     )
 
     postgres_host: str = "localhost"
-    postgres_port: int = 5433
+    postgres_port: int = 5434
     postgres_db: str = "tennis"
     postgres_user: str = "tennis"
     postgres_password: str = "tennis"
