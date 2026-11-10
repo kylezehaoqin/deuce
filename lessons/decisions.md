@@ -169,3 +169,25 @@ misses: rally-02, direction-02, pressure-02. Flaky: semantic-01, direction-01.
 **Say it out loud:** "I decided the line case by case, then found the rule
 that explained my choices: answer what was literally asked, refuse what can
 only be stood in for. The first prompt from that rule refused too much."
+
+## D9 -- What makes a question valuable? (the question set, round 2)
+**Decided by:** Kyle   **Date:** 2026-11-10
+**Options (user):** scout/coach, analyst/journalist, or fan. **Chosen: all
+three** -- every new question carries a `persona` tag.
+**Options (families):** A signature marts, B honesty traps, C held-out routing.
+**Chosen: all three** -- 6 + 6 + 8 questions.
+**Evidence:** the original 16 predate the warehouse: 8 of the 9 marts they
+name do not exist, and 10 built tables -- including mart_pressure_index,
+mart_player_style, mart_matchup and mart_data_coverage -- are never named.
+Routes were 12 sql / 4 refuse, nothing for semantic or hybrid. Every new
+question was checked against the data first: e.g. Nadal's rally slope
++0.0105 vs Federer's -0.0044 (trap-02), pre-2010 rally length all 'low'
+confidence (trap-01), and notes exist only in stg_points, which the agent
+role cannot read -- so ho-05/06 are semantic/hybrid.
+**Chosen:** the 20 questions as drafted. C lives in evals/heldout_routing.yml
+and is never read while editing <routing>, so it gives the first honest
+routing score. Still open: whether A and B join the routing eval.
+**Say it out loud:** "My question set was written before the warehouse, so it
+tested marts that didn't exist and ignored the ones that did. I rebuilt it in
+three families: what only this data can answer, the traps an honest answer
+must name, and a held-out set to score routing without fooling myself."

@@ -1,0 +1,20 @@
+# HELD-OUT routing questions. Do NOT read this file when editing <routing>.
+#
+# The <routing> rules were written from the 16 original questions, so their
+# 12/16 is an upper bound. These questions are kept out of rule-writing, so a
+# score on them is the honest estimate. They were written by the same author
+# as the rules, so they are held out from tuning, not blind.
+#
+# Labels apply Kyle's D8 rules (lessons/decisions.md). ho-05 and ho-06 are
+# semantic/hybrid because charter notes are not in any mart: they live in
+# stg_points, which the agent role cannot read.
+
+questions:
+  - {id: ho-01, persona: fan,     route: sql,      question: "Tell me the story of Novak Djokovic's biggest comebacks."}
+  - {id: ho-02, persona: fan,     route: refuse,   question: "Did the crowd affect Federer in his Wimbledon losses?"}
+  - {id: ho-03, persona: analyst, route: refuse,   question: "How windy was it when Nadal lost at Roland Garros?"}
+  - {id: ho-04, persona: scout,   route: sql,      question: "Which players does Jannik Sinner struggle against most?"}
+  - {id: ho-05, persona: analyst, route: semantic, question: "What did charters note about medical timeouts in Carlos Alcaraz's matches?"}
+  - {id: ho-06, persona: analyst, route: hybrid,   question: "After a charter noted a time violation, did the server win fewer of the next points?"}
+  - {id: ho-07, persona: scout,   route: sql,      question: "Where does Daniil Medvedev aim his first serve on the ad court at 30-40?"}
+  - {id: ho-08, persona: fan,     route: refuse,   question: "How fast is Carlos Alcaraz's forehand?"}

@@ -257,3 +257,142 @@ questions:
     reference_sql: "N/A — out of scope"
     expected: "A scoped refusal. A confident prediction is a FAIL."
     grounding: "tests scope discipline, not just factual grounding"
+
+  # ─────────────── SIGNATURE MARTS (added 2026-11-10) ───────────────
+  # What only this warehouse can answer. Each was checked against the data
+  # before it was added. persona: who would ask it.
+
+  - id: sig-01
+    persona: analyst
+    question: "Who are the most clutch servers: who wins more than their usual share of service points when the match is most on the line?"
+    category: pressure
+    difficulty: multi-step
+    marts: [mart_pressure_index]
+    answer_shape: "Ranked servers: win rate on the highest-leverage service points vs their own overall service win rate, with n for both."
+    reference_sql: "to write after review"
+    expected: "to fill by running reference_sql"
+    grounding: "leverage describes the score for a typical server on that tour and surface, not this server (D1). Tiebreak points have no leverage. A minimum n per server must be stated."
+
+  - id: sig-02
+    persona: analyst
+    question: "Is break point really the highest-pressure point in tennis? Compare break points, deuce and game points by how much they swing the match."
+    category: pressure
+    difficulty: sql
+    marts: [mart_pressure_index]
+    answer_shape: "Mean leverage_index by pressure flag, with n, and the share of the top-leverage points that are not break points."
+    reference_sql: "to write after review"
+    expected: "to fill by running reference_sql"
+    grounding: "leverage_index is normalised per tour (1.0 = an average point). Tiebreak points are excluded and must be named as excluded."
+
+  - id: sig-03
+    persona: scout
+    question: "Which ATP players play most like Grigor Dimitrov on hard courts?"
+    category: matchup
+    difficulty: multi-step
+    marts: [mart_player_style]
+    answer_shape: "Top 5 nearest players by distance over z-scored style rates, ATP and hard court only, with each player's matches."
+    reference_sql: "to write after review"
+    expected: "to fill by running reference_sql"
+    grounding: "z-score within ATP hard-court cells only (T9: pooling tours put Ivanovic next to Federer). Exclude thin cells (under 20 matches). Name bh_slice_rate as the feature most likely to dominate."
+
+  - id: sig-04
+    persona: scout
+    question: "How does Jannik Sinner's play change against left-handers compared with his usual baseline?"
+    category: matchup
+    difficulty: multi-step
+    marts: [mart_matchup, dim_players]
+    answer_shape: "Match-weighted mean delta per style rate, over left-handed opponents, with the number of opponents and matches."
+    reference_sql: "to write after review"
+    expected: "to fill by running reference_sql"
+    grounding: "23 matches against 12 left-handers: say the sample is small. Deltas include career change and opponent quality (mart_matchup description)."
+
+  - id: sig-05
+    persona: fan
+    question: "Who is Carlos Alcaraz's toughest opponent? Only count players he has faced at least 3 times."
+    category: matchup
+    difficulty: sql
+    marts: [mart_matchup]
+    answer_shape: "Opponents ranked by Alcaraz's points-won rate, lowest first, with matches and points."
+    reference_sql: "to write after review"
+    expected: "to fill by running reference_sql"
+    grounding: "points won, not matches won (retirements). Charted matches are a sample of his career, not all of it."
+
+  - id: sig-06
+    persona: analyst
+    question: "How complete is the charting data for Carlos Alcaraz in each season, and who charted most of it?"
+    category: coverage
+    difficulty: sql
+    marts: [mart_data_coverage]
+    answer_shape: "Per season: matches, direction_charted_rate, dominant_charter."
+    reference_sql: "to write after review"
+    expected: "to fill by running reference_sql"
+    grounding: "the observation process has its own time series (T10). This is the question to ask before trusting any trend."
+
+  # ─────────────── HONESTY TRAPS (added 2026-11-10) ───────────────
+  # A correct answer MUST state the caveat. A clean number without it is a FAIL.
+
+  - id: trap-01
+    persona: analyst
+    question: "Have rallies got longer since the 1990s?"
+    category: rally
+    difficulty: sql
+    marts: [fct_points]
+    answer_shape: "Mean rally length per decade, with parse_confidence per decade."
+    reference_sql: "to write after review"
+    expected: "Measured: 3.5-4.1 shots per decade since the 1980s, but every decade before 2010 is 'low' confidence (~55% parser accuracy)."
+    grounding: "THE TRAP: comparing across charting eras. Must state that pre-2010 numbers are low confidence."
+
+  - id: trap-02
+    persona: fan
+    question: "Does Nadal win a higher share of long rallies than Federer?"
+    category: rally
+    difficulty: sql
+    marts: [mart_rally_shape]
+    answer_shape: "Each player's win_rate_slope, and why the slope, not the level, is the comparison."
+    reference_sql: "to write after review"
+    expected: "Measured slopes: Nadal +0.0105, Federer -0.0044."
+    grounding: "THE TRAP: comparing win-rate LEVELS, which mostly reflect opponent quality (mart_rally_shape description)."
+
+  - id: trap-03
+    persona: scout
+    question: "What is Amanda Anisimova's first-serve placement on grass in 2026?"
+    category: serve
+    difficulty: sql
+    marts: [mart_player_style]
+    answer_shape: "T share and entropy per court side, with n."
+    reference_sql: "to write after review"
+    expected: "2 charted matches in that cell."
+    grounding: "THE TRAP: a thin sample. Must say 2 matches is too few to call a pattern."
+
+  - id: trap-04
+    persona: analyst
+    question: "Has Carlos Alcaraz started hitting fewer inside-out forehands over his career?"
+    category: direction
+    difficulty: multi-step
+    marts: [mart_player_style, mart_data_coverage]
+    answer_shape: "fh_inside_out_rate per season and surface, beside direction_charted_rate and dominant_charter."
+    reference_sql: "to write after review"
+    expected: "to fill by running reference_sql"
+    grounding: "THE TRAP: T10. The apparent decline sits inside a window where direction coverage fell .943 -> .797 as the dominant charter changed. Must not call it a trend."
+
+  - id: trap-05
+    persona: scout
+    question: "Does Sinner handle pressure better than Alcaraz, judging by the leverage index?"
+    category: pressure
+    difficulty: multi-step
+    marts: [mart_pressure_index]
+    answer_shape: "Each player's win rate on high-leverage points vs their own average, with n -- not their mean leverage_index."
+    reference_sql: "to write after review"
+    expected: "to fill by running reference_sql"
+    grounding: "THE TRAP: leverage describes the score, not the player (D1). A player's mean leverage says how often they reached big points, not how they played them."
+
+  - id: trap-06
+    persona: analyst
+    question: "Who has the best return game in the dataset?"
+    category: serve
+    difficulty: sql
+    marts: [fct_points]
+    answer_shape: "Return points won per player, with matches and a minimum n."
+    reference_sql: "to write after review"
+    expected: "to fill by running reference_sql"
+    grounding: "THE TRAP: charted matches are not a random sample of tennis -- volunteers chart big matches and top players, so opponent quality differs by player. Must say so."
