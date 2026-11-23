@@ -15,7 +15,6 @@
 # comebacks are visible in the score, and charter notes mention momentum or
 # comeback on only 16 points.
 
-serve-01: {route: sql, rule: 1}
 serve-02: {route: refuse, rule: 3, why: "the next shot needs fct_shots; win rate after a wide serve is not what was asked"}
 serve-03: {route: sql, rule: 1}
 rally-01: {route: sql, rule: 1, why: "the question's buckets differ from mart_rally_shape; fct_points.rally_length has the raw count"}

@@ -30,17 +30,6 @@ meta:
 questions:
 
   # ─────────────── SERVE & SERVE+1 ───────────────
-  - id: serve-01
-    question: "On break point, do pros change their second-serve placement from their usual pattern, and does the change win them more points?"
-    category: serve
-    difficulty: sql
-    marts: [fct_serves]
-    needs_columns: [player_id, serve_number, court_side, point_score, serve_direction]
-    answer_shape: "Per server with enough serves: second-serve placement shares and entropy on break point vs other points, and points won on each."
-    reference_sql: "to write after review"
-    expected: "to fill by running reference_sql"
-    grounding: "T3 found no tour-wide rule: it is a player property. Saying so IS the finding. 30-40 is always the ad court, so compare like with like."
-
   - id: serve-02
     question: "After a wide serve on the deuce court, how often is the next shot a forehand into the open court, and does the server win those points?"
     category: serve
@@ -72,7 +61,7 @@ questions:
 
   # ─────────────── RALLY SHAPE ───────────────
   - id: rally-01
-    question: "Is {player} a first-striker on hard courts but a grinder on clay? Compare his rally-length slope by surface."
+    question: "Is {player} a first-striker on hard courts but a grinder on clay? Compare their rally-length slope by surface."
     category: rally
     difficulty: sql
     marts: [mart_rally_shape]
@@ -127,12 +116,12 @@ questions:
 
   # ─────────────── PRESSURE & MOMENTUM ───────────────
   - id: pressure-01
-    question: "On break point, which servers change their first-serve placement most from their usual pattern, and does the change win them more points?"
+    question: "On break point, which servers change their first- and second-serve placement most from their usual pattern, and does the change win them more points?"
     category: pressure
     difficulty: multi-step
     marts: [fct_serves, mart_serve_patterns]
     needs_columns: [player_id, is_break_point, serve_direction, serve_number, double_fault]
-    answer_shape: "Per server: first-serve shares and entropy on break point vs other points, and win rate behind each, with n."
+    answer_shape: "Per server and serve number: placement shares and entropy on break point vs other points, and win rate behind each, with n."
     reference_sql: "to write after review"
     expected: "to fill by running reference_sql"
     grounding: "Placement, not speed: speed is not charted. Break point is a coarse flag; leverage is the finer one."
@@ -161,12 +150,12 @@ questions:
 
   # ─────────────── MATCHUP / SCOUTING ───────────────
   - id: matchup-01
-    question: "What are {player}'s most predictable patterns?"
+    question: "What are {player}'s most predictable patterns, and how could an opponent exploit them?"
     category: matchup
     difficulty: multi-step
     marts: [mart_serve_patterns, mart_player_style]
     needs_columns: [player_id, "(pulls from multiple marts)"]
-    answer_shape: "The lowest-entropy serve patterns by court side and pressure, with n; rally patterns named as unanswerable."
+    answer_shape: "The lowest-entropy serve patterns by court side and pressure, with n, and the returner's win rate when the serve goes to the predicted spot; rally patterns named as unanswerable."
     reference_sql: "to write after review"
     expected: "to fill by running reference_sql"
     grounding: "Partial (D8): serve patterns are answerable; rally patterns need fct_shots."
@@ -235,7 +224,7 @@ questions:
 
   - id: sig-03
     persona: scout
-    question: "Which current players play most like Roger Federer did?"
+    question: "Which players in the 2024-2026 seasons play most like Roger Federer did?"
     category: matchup
     difficulty: multi-step
     marts: [mart_player_style]
