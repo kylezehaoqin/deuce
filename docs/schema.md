@@ -184,6 +184,13 @@ erDiagram
     text player PK
     text row_label PK
   }
+  mcp_stats_serve_direction {
+    text match_id PK
+    text player PK
+    text row_label PK
+    text deuce_wide
+    text ad_t
+  }
   ingest_runs {
     uuid run_id PK
     text source_file
@@ -201,6 +208,7 @@ erDiagram
   mcp_matches ||--o{ mcp_stats_rally : oracle
   mcp_matches ||--o{ mcp_stats_shot_types : oracle
   mcp_matches ||--o{ mcp_stats_shot_direction : oracle
+  mcp_matches ||--o{ mcp_stats_serve_direction : oracle
   ingest_runs ||--o{ error_records : "dead letter"
 ```
 
@@ -333,6 +341,75 @@ erDiagram
     bigint faults_net
     bigint faults_deep
   }
+  dim_charters {
+    text charter_name PK
+    bigint matches_charted
+    bigint matches_2020s
+    bigint matches_pre_2010
+    numeric direction_charted_rate
+    numeric return_depth_charted_rate
+  }
+  mart_data_coverage {
+    text player_name PK
+    text surface PK
+    int season PK
+    text coverage_grain PK "4 grains"
+    bigint matches
+    text dominant_charter FK
+    numeric direction_charted_rate
+    numeric high_confidence_rate
+  }
+  mart_rally_shape {
+    text player_name PK
+    text surface PK "NULL when pooled"
+    text shape_grain PK
+    text rally_bucket PK
+    bigint points
+    numeric win_rate
+    numeric win_rate_slope "compare THIS"
+  }
+  mart_pressure_index {
+    text point_key PK
+    text match_id
+    text server_name FK
+    text returner_name FK
+    boolean is_tiebreak_game
+    numeric game_leverage
+    numeric set_swing
+    numeric match_swing
+    numeric match_leverage
+    numeric leverage_index "1.0 = tour average"
+  }
+  int_player_match_style {
+    text match_id PK
+    text player_name PK
+    text opponent_name FK
+    int season
+    text surface
+    bigint shots "counts only, no rates"
+    bigint fh_directed
+    bigint bh_directed
+  }
+  mart_player_style {
+    text player_name PK
+    int season PK
+    text surface PK
+    bigint matches
+    numeric fh_dominance "12 rates, each with its n"
+    numeric bh_slice_rate
+    numeric deuce_serve_entropy
+    text dominant_charter
+  }
+  mart_matchup {
+    text player_name PK
+    text opponent_name PK
+    bigint matches
+    bigint baseline_matches
+    numeric bh_slice_rate "rate in the pair"
+    numeric bh_slice_rate_baseline "surface-matched"
+    numeric bh_slice_rate_delta "x 13 rates"
+    numeric h2h_points_won_rate
+  }
   fct_shots {
     text shot_key PK "NOT BUILT"
   }
@@ -341,17 +418,41 @@ erDiagram
   dim_players ||--o{ fct_serves : server
   dim_players ||--o{ mart_serve_patterns : server
   fct_points ||--|{ fct_serves : "1 point : 1-2 serves"
-  fct_points ||--o| fct_shots : "1 point : N shots"
+  fct_points ||--o{ fct_shots : "1 point : N shots"
   fct_games ||--|{ fct_points : "1 game : N points"
+  fct_points ||--o| mart_pressure_index : "1 point : 0-1 leverage rows"
+  dim_players ||--o{ mart_rally_shape : player
+  dim_players ||--o{ mart_data_coverage : player
+  dim_charters ||--o{ mart_data_coverage : "dominant charter"
+  dim_players ||--o{ int_player_match_style : "player / opponent"
+  mart_player_style ||--|{ int_player_match_style : "sums matches"
+  mart_matchup ||--|{ int_player_match_style : "sums pair + baseline"
+  dim_players ||--o{ mart_matchup : "player AND opponent"
 ```
+
+Three relationships in this diagram are easy to misread:
+
+- **`mart_pressure_index` is 0-1 per point, not exactly 1.** 1,875,130 rows
+  against 1,875,132 in `fct_points`: 2 points have no game number. Tiebreak
+  points are present, with NULL leverage (`is_tiebreak_game`).
+- **`mart_matchup` joins `dim_players` twice** -- as the player and as the
+  opponent -- and every pair appears twice, once from each side.
+- **The two style marts are sums of `int_player_match_style`.** It is the one
+  definition of every count, so the marts cannot drift apart. `mart_matchup`
+  sums it twice: the pair's matches, and the player's other matches on the
+  same surfaces (the leave-one-out baseline, D5).
+
+Grain, not foreign keys, ties most of these together: the marts are rebuilt
+from the facts, never updated, so dbt tests (`unique_combination_of_columns`)
+guard the keys instead of database constraints.
 
 ### The fan-out, with real numbers
 
 ```
       11,819 matches
    ->  296,286 games            (25.1 per match)
-   -> 1,874,950 points          (6.3 per game)
-   -> 2,578,594 serves          (1.375 per point)
+   -> 1,875,132 points          (6.3 per game)
+   -> 2,577,836 serves          (1.375 per point)
    -> ~7,000,000 shots (est.)   fct_shots, not built
 ```
 
