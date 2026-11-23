@@ -23,6 +23,7 @@ what this closes.
 | **0** | Repo, Postgres ingest, one question answered end-to-end | ✅ done |
 | **1** | dbt spine + Dagster orchestration + tests | ✅ done |
 | **2** | LangGraph text-to-SQL agent; every answer cites its source rows | 🟡 in progress |
+| **2.5** | Abilities around the SQL agent, in order: a verifier, name resolution, statistics (code execution), charts, a clarify route (D11) | ⚪ |
 | **3** | Eval harness + pgvector similarity + Langfuse tracing | ⚪ |
 | **4** | MCP server exposing the analytics as tools | ⚪ |
 
@@ -220,6 +221,7 @@ src/deuce/
     graph.py              decide (route + SQL) -> run_sql -> retry
     sql_tools.py          one-statement check; read-only runner, rows capped
     llm.py                the one place a model is named (Gemini, D6)
+  evals/templates.py      expand question templates x fillers into eval cases
 
 dbt/models/
   staging/                1:1 with raw — cast, rename, nothing else
@@ -241,6 +243,7 @@ sql/
 docs/
   data-trust.md           what every fact is worth, and what it isn't
   mcp-notation.md         the shot-notation codebook + measured accuracy
+  evals.md                the question set: audiences, the five tests, templates
   marts.md                the grain ladder and the mart map
   schema.md               live schema, ER diagrams, normalisation reasoning
 lessons/                  why it's built this way — plus a hypothesis log and

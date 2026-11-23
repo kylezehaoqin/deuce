@@ -216,3 +216,47 @@ measured on the old wording: re-run before quoting it.
 **Say it out loud:** "Tour teams have better data than this, so I stopped
 building for them. I built for people who explain or learn the game in public
 -- they need a number they can cite, or a pattern they can teach."
+
+## D11 -- Which abilities around the SQL agent, and in what order?
+**Decided by:** Kyle   **Date:** 2026-11-23
+**Options considered:** RAG over notes, fixed tools / semantic layer, code
+execution, planner-executor, a critic / verifier, web search, scheduled
+content, user memory -- plus abilities: charts, name resolution, a clarify
+route, multi-turn follow-ups, uncertainty in answers, citable output.
+**Chosen order, as Increment 2.5:** verifier -> name resolution ->
+statistics -> charts -> clarify. Nothing before the answer node exists
+(<grounding> comes first).
+**Why this order:** the first two protect correctness; the last three add
+reach for the P and T jobs (D10). The verifier enforces the project's thesis
+-- no claim beyond what the data supports -- on every answer, not only in the
+eval. Statistics is needed for honest claims ("is this difference real?") and
+T11 cannot be tested without a permutation test. Charts serve people who
+publish. Clarify answers the ambiguity test.
+**Deferred:** web search (mixes trusted and untrusted sources), scheduled
+content (needs trustworthy answers first), user memory.
+**Evidence:** none measured yet -- this is a sequencing decision. The case for
+name resolution is to be measured (near-duplicate names in dim_players).
+**Say it out loud:** "Most good agents are one router and several tools. I
+kept text-to-SQL as the core and ordered the tools by what protects
+correctness first: a verifier, then name resolution, then statistics."
+
+## D12 -- Questions as templates: one case, or a method?
+**Decided by:** Kyle   **Date:** 2026-11-23
+**Options:** (a) keep one fixed case per question; (b) templates with {slots},
+each run with ~5 fillers chosen to stress the agent.
+**Evidence:** 4 questions had a {player} slot, but every eval filled it with
+the same player; 8 hard-coded a name; 18 were tour-level. A perfect score on a
+single famous, deep-data player proves nothing about anyone else.
+**Chosen:** (b). 12 templates, 54 fillers, every filler checked first: deep
+(Djokovic, 553 matches), WTA (Swiatek), left-handed (Mannarino), ambiguous
+hand (Nadal: L in 420 of 425 matches), thin (Cazaux, 12), a misspelling
+("Novak Djokovich", trigram 0.82), an absent player ("Teodor Vashkelny",
+closest real name 0.13), a control (a 49-match cell: no caveat needed). Names
+that ARE the test stay as the first filler (trap-02, trap-03). 30 questions
+expand to 72 cases.
+**Found on the first run:** the router refuses absent players for unrelated
+reasons; and it called a 2026 question "the future" -- the data has 2026
+matches.
+**Say it out loud:** "A test that only ever asks about Federer only tests
+Federer. I turned questions into templates and filled them with the hard
+cases: a thin sample, a misspelled name, a player who doesn't exist."

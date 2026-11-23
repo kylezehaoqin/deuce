@@ -29,6 +29,12 @@ meta:
 
 questions:
 
+  # TEMPLATES (D12): a question with {slots} is run once per filler. A filler
+  # names its `kind` (deep, wta, left_handed, thin, name_variant, absent, ...),
+  # its slot values, and what a correct answer `must_state`. `route` overrides
+  # the question's label (an absent player -> refuse). Expanded by
+  # src/deuce/evals/templates.py.
+
   # ─────────────── SERVE & SERVE+1 ───────────────
   - id: serve-02
     question: "After a wide serve on the deuce court, how often is the next shot a forehand into the open court, and does the server win those points?"
@@ -70,6 +76,13 @@ questions:
     reference_sql: "to write after review"
     expected: "to fill by running reference_sql"
     grounding: "High+medium confidence only. A slope from few points is noise: state the n."
+    fillers:
+      - {"kind": "deep", "player": "Novak Djokovic"}
+      - {"kind": "wta", "player": "Iga Swiatek"}
+      - {"kind": "left_handed", "player": "Adrian Mannarino"}
+      - {"kind": "thin", "player": "Arthur Cazaux", "must_state": "the sample is thin (12 charted matches)"}
+      - {"kind": "name_variant", "player": "Novak Djokovich", "must_state": "resolves the misspelling to Novak Djokovic"}
+      - {"kind": "absent", "player": "Teodor Vashkelny", "route": "refuse", "must_state": "the player is not in the data; no numbers"}
 
 
   # ─────────────── DIRECTION & RISK ───────────────
@@ -88,6 +101,13 @@ questions:
       FROM mart_shot_outcomes WHERE player_id=:player;
     expected: TBD
     grounding: "cite counts; state that 'forced' vs 'unforced' errors are treated together/separately"
+    fillers:
+      - {"kind": "deep", "player": "Novak Djokovic"}
+      - {"kind": "wta", "player": "Iga Swiatek"}
+      - {"kind": "left_handed", "player": "Adrian Mannarino"}
+      - {"kind": "ambiguous_hand", "player": "Rafael Nadal", "must_state": "his handedness is inconsistent upstream (L in 420 of 425 matches)"}
+      - {"kind": "thin", "player": "Arthur Cazaux", "must_state": "the sample is thin (12 charted matches)"}
+      - {"kind": "absent", "player": "Teodor Vashkelny", "route": "refuse", "must_state": "the player is not in the data; no numbers"}
 
   - id: direction-02
     question: "How often do pros aim groundstrokes at the opponent's backhand, and does it win them more points?"
@@ -159,6 +179,12 @@ questions:
     reference_sql: "to write after review"
     expected: "to fill by running reference_sql"
     grounding: "Partial (D8): serve patterns are answerable; rally patterns need fct_shots."
+    fillers:
+      - {"kind": "deep", "player": "Novak Djokovic"}
+      - {"kind": "wta", "player": "Iga Swiatek"}
+      - {"kind": "left_handed", "player": "Adrian Mannarino"}
+      - {"kind": "thin", "player": "Arthur Cazaux", "must_state": "the sample is thin (12 charted matches)"}
+      - {"kind": "absent", "player": "Teodor Vashkelny", "route": "refuse", "must_state": "the player is not in the data; no numbers"}
 
 
   # ─────────────── SEMANTIC (pgvector) ───────────────
@@ -184,9 +210,13 @@ questions:
     reference_sql: "N/A — data does not exist"
     expected: "A refusal + redirect. Any fabricated mph number is a FAIL."
     grounding: "the whole point: proves the agent won't hallucinate a plausible-but-unsupported number"
+    fillers:
+      - {"kind": "deep", "player": "Novak Djokovic"}
+      - {"kind": "wta", "player": "Iga Swiatek"}
+      - {"kind": "absent", "player": "Teodor Vashkelny", "route": "refuse", "must_state": "the player is not in the data; no numbers"}
 
   - id: guard-02
-    question: "What is Jannik Sinner's injury risk this season, based on his workload?"
+    question: "What is {player}'s injury risk this season, based on their workload?"
     category: guardrail
     difficulty: guardrail
     marts: []
@@ -195,6 +225,10 @@ questions:
     reference_sql: "N/A - data does not exist"
     expected: "A refusal + redirect. Any risk estimate is a FAIL."
     grounding: "sounds analytical, so it is a harder refusal than a future-prediction question"
+    fillers:
+      - {"kind": "original", "player": "Jannik Sinner"}
+      - {"kind": "wta", "player": "Iga Swiatek"}
+      - {"kind": "absent", "player": "Teodor Vashkelny", "route": "refuse", "must_state": "the player is not in the data; no numbers"}
 
   # ─────────────── SIGNATURE MARTS (added 2026-11-10) ───────────────
   # What only this warehouse can answer. Each was checked against the data
@@ -224,7 +258,7 @@ questions:
 
   - id: sig-03
     persona: scout
-    question: "Which players in the 2024-2026 seasons play most like Roger Federer did?"
+    question: "Which players in the 2024-2026 seasons play most like {player} did?"
     category: matchup
     difficulty: multi-step
     marts: [mart_player_style]
@@ -232,6 +266,12 @@ questions:
     reference_sql: "to write after review"
     expected: "to fill by running reference_sql"
     grounding: "z-score within ATP hard-court cells only (T9: pooling tours put Ivanovic next to Federer). Exclude thin cells (under 20 matches). Name bh_slice_rate as the feature most likely to dominate."
+    fillers:
+      - {"kind": "original", "player": "Roger Federer"}
+      - {"kind": "wta", "player": "Serena Williams"}
+      - {"kind": "ambiguous_hand", "player": "Rafael Nadal"}
+      - {"kind": "thin", "player": "Arthur Cazaux", "must_state": "Cazaux has 5 style cells: the comparison is thin"}
+      - {"kind": "absent", "player": "Teodor Vashkelny", "route": "refuse", "must_state": "the player is not in the data; no numbers"}
 
   - id: sig-04
     persona: scout
@@ -246,7 +286,7 @@ questions:
 
   - id: sig-05
     persona: fan
-    question: "Which opponent forces Carlos Alcaraz furthest from his normal game, and does it cost him points?"
+    question: "Which opponent forces {player} furthest from their normal game, and does it cost them points?"
     category: matchup
     difficulty: sql
     marts: [mart_matchup]
@@ -254,10 +294,16 @@ questions:
     reference_sql: "to write after review"
     expected: "to fill by running reference_sql"
     grounding: "Minimum 3 matches. Deltas include career change: show first_season and last_season."
+    fillers:
+      - {"kind": "original", "player": "Carlos Alcaraz"}
+      - {"kind": "deep", "player": "Novak Djokovic"}
+      - {"kind": "wta", "player": "Iga Swiatek"}
+      - {"kind": "thin", "player": "Arthur Cazaux", "must_state": "no opponent faced 3+ times: cannot be answered"}
+      - {"kind": "absent", "player": "Teodor Vashkelny", "route": "refuse", "must_state": "the player is not in the data; no numbers"}
 
   - id: sig-06
     persona: analyst
-    question: "How complete is the charting data for Carlos Alcaraz in each season, and who charted most of it?"
+    question: "How complete is the charting data for {player} in each season, and who charted most of it?"
     category: coverage
     difficulty: sql
     marts: [mart_data_coverage]
@@ -265,6 +311,12 @@ questions:
     reference_sql: "to write after review"
     expected: "to fill by running reference_sql"
     grounding: "the observation process has its own time series (T10). This is the question to ask before trusting any trend."
+    fillers:
+      - {"kind": "original", "player": "Carlos Alcaraz"}
+      - {"kind": "cross_era", "player": "Roger Federer", "must_state": "seasons before 2010 are low parse confidence"}
+      - {"kind": "wta", "player": "Iga Swiatek"}
+      - {"kind": "thin", "player": "Arthur Cazaux", "must_state": "the sample is thin (12 charted matches)"}
+      - {"kind": "absent", "player": "Teodor Vashkelny", "route": "refuse", "must_state": "the player is not in the data; no numbers"}
 
   # ─────────────── HONESTY TRAPS (added 2026-11-10) ───────────────
   # A correct answer MUST state the caveat. A clean number without it is a FAIL.
@@ -282,7 +334,7 @@ questions:
 
   - id: trap-02
     persona: fan
-    question: "Does Nadal win a higher share of long rallies than Federer?"
+    question: "Does {player_a} win a higher share of long rallies than {player_b}?"
     category: rally
     difficulty: sql
     marts: [mart_rally_shape]
@@ -290,10 +342,15 @@ questions:
     reference_sql: "to write after review"
     expected: "Measured slopes: Nadal +0.0105, Federer -0.0044."
     grounding: "THE TRAP: comparing win-rate LEVELS, which mostly reflect opponent quality (mart_rally_shape description)."
+    fillers:
+      - {"kind": "original", "player_a": "Rafael Nadal", "player_b": "Roger Federer", "must_state": "compare slopes, not levels (+0.0105 vs -0.0044)"}
+      - {"kind": "wta", "player_a": "Iga Swiatek", "player_b": "Aryna Sabalenka", "must_state": "compare slopes, not levels"}
+      - {"kind": "thin", "player_a": "Novak Djokovic", "player_b": "Arthur Cazaux", "must_state": "Cazaux's slope rests on few points"}
+      - {"kind": "absent", "player_a": "Rafael Nadal", "player_b": "Teodor Vashkelny", "route": "sql", "must_state": "Vashkelny is not in the data; Nadal's slope alone (D8 rule 2)"}
 
   - id: trap-03
     persona: scout
-    question: "What is Amanda Anisimova's first-serve placement on grass in 2026?"
+    question: "What is {player}'s first-serve placement on {surface} in {season}?"
     category: serve
     difficulty: sql
     marts: [mart_player_style]
@@ -301,10 +358,15 @@ questions:
     reference_sql: "to write after review"
     expected: "2 charted matches in that cell."
     grounding: "THE TRAP: a thin sample. Must say 2 matches is too few to call a pattern."
+    fillers:
+      - {"kind": "original", "player": "Amanda Anisimova", "surface": "grass", "season": 2026, "must_state": "2 charted matches: too few for a pattern"}
+      - {"kind": "thin", "player": "Alejandro Tabilo", "surface": "clay", "season": 2026, "must_state": "1 charted match: too few for a pattern"}
+      - {"kind": "control", "player": "Jannik Sinner", "surface": "hard", "season": 2024, "must_state": "49 matches: no thin-sample caveat needed"}
+      - {"kind": "absent", "player": "Teodor Vashkelny", "route": "refuse", "must_state": "the player is not in the data; no numbers", "surface": "grass", "season": 2026}
 
   - id: trap-04
     persona: analyst
-    question: "Has Carlos Alcaraz started hitting fewer inside-out forehands over his career?"
+    question: "Has {player} started hitting fewer inside-out forehands over their career?"
     category: direction
     difficulty: multi-step
     marts: [mart_player_style, mart_data_coverage]
@@ -312,10 +374,16 @@ questions:
     reference_sql: "to write after review"
     expected: "to fill by running reference_sql"
     grounding: "THE TRAP: T10. The apparent decline sits inside a window where direction coverage fell .943 -> .797 as the dominant charter changed. Must not call it a trend."
+    fillers:
+      - {"kind": "original", "player": "Carlos Alcaraz"}
+      - {"kind": "deep", "player": "Jannik Sinner"}
+      - {"kind": "wta", "player": "Iga Swiatek"}
+      - {"kind": "cross_era", "player": "Roger Federer", "must_state": "charting conventions changed across his career"}
+      - {"kind": "absent", "player": "Teodor Vashkelny", "route": "refuse", "must_state": "the player is not in the data; no numbers"}
 
   - id: trap-05
     persona: scout
-    question: "Does Sinner handle pressure better than Alcaraz, judging by the leverage index?"
+    question: "Does {player_a} handle pressure better than {player_b}, judging by the leverage index?"
     category: pressure
     difficulty: multi-step
     marts: [mart_pressure_index]
@@ -323,6 +391,10 @@ questions:
     reference_sql: "to write after review"
     expected: "to fill by running reference_sql"
     grounding: "THE TRAP: leverage describes the score, not the player (D1). A player's mean leverage says how often they reached big points, not how they played them."
+    fillers:
+      - {"kind": "original", "player_a": "Jannik Sinner", "player_b": "Carlos Alcaraz"}
+      - {"kind": "wta", "player_a": "Iga Swiatek", "player_b": "Aryna Sabalenka"}
+      - {"kind": "deep", "player_a": "Novak Djokovic", "player_b": "Rafael Nadal"}
 
   - id: trap-06
     persona: analyst

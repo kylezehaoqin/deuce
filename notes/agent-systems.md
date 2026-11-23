@@ -14,6 +14,7 @@ Look things up; don't copy them into writing.
 - [MCP](#mcp)
 - [What to skip for now](#what-to-skip-for-now)
 - [Study order](#study-order)
+- [Agent types](#agent-types)
 
 ---
 
@@ -153,3 +154,30 @@ mostly tool design again.
 first" becomes eval hypotheses, trust tiers become grounding rules. The common
 beginner mistake is tuning a prompt by feel. The fix is the one already in use:
 change one thing, measure it, log it.
+
+---
+
+## Agent types
+
+Agents differ mainly in **where the answer comes from** and **how much freedom
+the agent has**.
+
+| Type | How it answers | Strength | Weakness |
+|---|---|---|---|
+| Text-to-SQL | writes queries against a database | exact, auditable numbers | only as good as the schema and its descriptions |
+| RAG (retrieval) | searches text, answers from what it found | prose | weak on numbers; the text can be wrong |
+| Fixed tools / semantic layer | calls predefined functions (`hold_rate(player)`) | consistent definitions, few errors | answers only what the tools cover |
+| Code execution | writes and runs Python | statistics, tests, charts | needs a sandbox; harder to audit |
+| Planner-executor | splits a hard question into steps | multi-step questions | more calls, more cost |
+| Critic / verifier | a second model checks the first | catches unsupported claims | one more call |
+| Web / browsing | fetches outside information | current context | sources vary in trust |
+| Scheduled / proactive | runs on a timer, unprompted | recurring content | needs a quality bar first |
+
+**The pattern most good systems use:** one router and several tools -- SQL for
+numbers, Python for statistics, a chart tool, retrieval for text. The tools
+sit AROUND the core; they rarely replace it.
+
+**Abilities that are easy to forget:** asking a clarifying question instead
+of guessing; follow-up questions ("and on clay?"); uncertainty in the answer
+(an interval, not just n); citable output; a cost and latency budget; user
+feedback turned into new eval cases.

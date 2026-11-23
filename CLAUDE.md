@@ -261,11 +261,18 @@ error, max 3) -> `sql_tools.py` (sqlglot one-statement check; runs as
 Not built: the answer node (needs `<grounding>`, `<style>`) and retrieval for
 `semantic`/`hybrid` (Increment 3).
 
-**Evals:** `evals/route_labels.yml` (Kyle's labels, D8);
+**Evals:** read `docs/evals.md` first -- the target audience (D10), the five
+tests a question must pass, and templates x fillers (D12, 30 questions -> 72
+cases via `src/deuce/evals/templates.py`). `evals/route_labels.yml` (Kyle's labels, D8);
 `uv run python -u scripts/eval_routes.py` scores routing alone -- 12/16 on two
 runs, an upper bound, every miss a refusal where sql was expected.
 `scripts/probe_models.py` is the D6 model comparison. Run each eval twice: two
 questions flip between runs at temperature 0.
+
+Roadmap after the answer node: Increment 2.5 (D11) -- verifier, name
+resolution, statistics, charts, clarify. T11 (behavioural momentum) is logged,
+untested; it needs the statistics step. Data note: dim_players flags Nadal's
+hand as ambiguous (3 R rows of 425) -- a majority rule is a decision for later.
 
 Decisions waiting for Kyle, in priority order (Claude builds once decided):
 
