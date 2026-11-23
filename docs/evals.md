@@ -103,6 +103,18 @@ Rules for reading a score:
 
 ## 6. What the evals have found so far
 
+**First clean run on the expanded set (2026-11-23):** 21/36 scored (58%), 1
+outage reported separately. 11 of the 15 misses are over-refusal:
+
+- Partial questions are refused when the unanswerable part is the question's
+  point ("is it +EV?"): direction-01 (4 fillers), direction-02, pressure-01,
+  pressure-02. Rule 2 needs stronger wording.
+- matchup-01 is refused in every filler. The "how could an opponent exploit
+  them" clause restored in review reads as tactical advice. A rewording that
+  helped job P hurt routing.
+- Absent players go to sql in 4 cases (rally-01, sig-05, sig-06, trap-04).
+
+
 - Every routing miss is a refusal where an answer was expected (over-refusal).
 - The router cannot see player names, so it cannot know a player is absent
   -- evidence for name resolution (D11). Trigram matching resolves a
