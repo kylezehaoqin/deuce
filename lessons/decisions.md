@@ -191,3 +191,28 @@ routing score. Still open: whether A and B join the routing eval.
 tested marts that didn't exist and ignored the ones that did. I rebuilt it in
 three families: what only this data can answer, the traps an honest answer
 must name, and a held-out set to score routing without fooling myself."
+
+## D10 -- Who is the agent for? (the target, locked)
+**Decided by:** Kyle   **Date:** 2026-11-23
+**Options:** tour coach / team; performance analyst; journalist / commentator;
+teaching coach; club player; strategy enthusiast; bettor; researcher.
+**Rejected: tour teams as the primary target.** They already hold far richer
+proprietary tracking (ATP/WTA, IBM, Infosys). This data has no edge for them
+unless it shows something theirs cannot.
+**Chosen:** two jobs. **P (publish):** content analysts, journalists,
+commentators, debating enthusiasts -- a surprising, defensible claim with a
+number. **T (teach/improve):** teaching coaches and improving players -- a
+pattern true across many pros. Every question must serve P or T and pass five
+tests: motive, decision, non-obvious, unambiguous, honestly answerable.
+**Evidence:** the data is elite pro matches only: 110 of 1,739 players have
+50+ charted matches; the 20 most-charted players appear in 42% of matches;
+71% of matches are 2015 or later. No club or junior matches. Its edge for P
+and T: free, public, citable, decades long, both tours.
+**Applied:** 10 questions reworded (several from one player to tour-level),
+rally-02 and matchup-02 cut, guard-02 and ho-08 replaced, and 5 tour-level
+teach-* questions added, each checked first (e.g. men hold 89.1% after winning
+the first point vs 63.2% after losing it). The D8 routing score (12/16) was
+measured on the old wording: re-run before quoting it.
+**Say it out loud:** "Tour teams have better data than this, so I stopped
+building for them. I built for people who explain or learn the game in public
+-- they need a number they can cite, or a pattern they can teach."

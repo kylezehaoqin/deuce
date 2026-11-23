@@ -17,4 +17,4 @@ questions:
   - {id: ho-05, persona: analyst, route: semantic, question: "What did charters note about medical timeouts in Carlos Alcaraz's matches?"}
   - {id: ho-06, persona: analyst, route: hybrid,   question: "After a charter noted a time violation, did the server win fewer of the next points?"}
   - {id: ho-07, persona: scout,   route: sql,      question: "Where does Daniil Medvedev aim his first serve on the ad court at 30-40?"}
-  - {id: ho-08, persona: fan,     route: refuse,   question: "How fast is Carlos Alcaraz's forehand?"}
+  - {id: ho-08, persona: fan,     route: refuse,   question: "What did Rafael Nadal's coach tell him during the changeovers?"}
