@@ -370,3 +370,41 @@ it's the player. If it vanishes, it was the collection process.
 *observation process* has its own time series. Any longitudinal finding needs the
 data-collection trend plotted beside it — otherwise you cannot tell a change in
 the player from a change in who was watching.
+
+## T11
+**Claim (Kyle's):** momentum is real, but not in the form T2 tested. Success
+builds confidence, and confidence shows in **behaviour**: a player who has
+just hit winners goes for more -- more down-the-line, smaller margins, closer
+to the lines. Mental play matters, and it cannot be seen on one point or a
+few points.
+
+**What T2 did and did not refute:** T2 tested *outcome* momentum (winning a
+long rally does not raise the chance of winning the next point, server held
+constant). It did not test *behavioural* momentum (risk choices after success)
+or *performance over a window* (playing above one's own level for a stretch).
+
+**Measurable footprints (point level, no fct_shots needed):**
+1. "Going for it" rate: the share of a player's points that THEY end, with a
+   winner or an unforced error.
+2. Miss profile: unforced errors wide/deep (`w` `d` `x`) = going for lines or
+   depth; into the net (`n`) = a tighter swing. Since 2020: 179,021 wide/deep
+   vs 113,441 net unforced errors, so both are well populated.
+
+**Falsifiable if:** after a run of a player's own winners, neither footprint
+rises above that player's baseline **in the same match**, once the streak bias
+is corrected.
+
+**Traps:**
+- **Streak bias (Miller & Sanjurjo, 2018):** in short sequences, "success
+  after a streak" is biased AGAINST finding momentum. Use a permutation test:
+  shuffle each match's points, compare the real sequence with the shuffles.
+- **Confounds:** opponent fatigue, score and leverage, who serves. Compare
+  within player within match; hold the server and leverage constant.
+- **Even a pass shows behaviour changed, not why.** Confidence is the
+  explanation, not the measurement.
+
+**Not measurable:** where a MADE shot landed (only misses carry a wide/deep
+code), body language, mental state. Shot-specific confidence ("more DTL
+forehands after DTL winners") needs fct_shots.
+
+**Status:** untested.

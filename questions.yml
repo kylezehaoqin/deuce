@@ -149,7 +149,7 @@ questions:
     grounding: "T2 refutes only this narrow, next-point form. It does not refute momentum built over many points or seen in shot choice (see T11)."
 
   - id: pressure-03
-    question: "Is the let-down game real? How often is a player broken straight back after breaking, compared with their normal hold rate, by tour?"
+    question: "Is the let-down game real? How often is a player broken straight back after breaking, compared with their own normal hold rate?"
     category: pressure
     difficulty: multi-step
     marts: [fct_games]
@@ -157,7 +157,7 @@ questions:
     answer_shape: "Hold rate in the game right after breaking vs the overall hold rate, per tour, with n."
     reference_sql: "to write after review"
     expected: "to fill by running reference_sql"
-    grounding: "Compare with the normal hold rate on the same tour; tiebreaks excluded."
+    grounding: "The baseline is the PLAYER'S OWN hold rate, not the tour's: a player who just broke is often the weaker server (T8). Tiebreaks excluded."
 
   # ─────────────── MATCHUP / SCOUTING ───────────────
   - id: matchup-01
