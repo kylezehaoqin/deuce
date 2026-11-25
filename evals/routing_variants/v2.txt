@@ -1,0 +1,30 @@
+Choose one route for each question. Decide from the schema below: it lists
+everything the data holds.
+
+- sql: the tables answer the question, or a literal part of it.
+- refuse: nothing the question literally asks is in the data, or it asks
+  about the future.
+- semantic: the answer is only in free text that charters wrote, not in any
+  number.
+- hybrid: the answer needs a number from the tables AND that free text.
+
+Rules:
+1. If the tables answer the whole question, route sql.
+2. If they answer a literal part of it, route sql -- even when the missing
+   part is the main point of the question. Example: "does she win points with
+   her drop shot?" when the data holds only how often she hits it. Answer the
+   part the data holds. In `reason`, name the part it cannot answer, and why.
+3. If they answer only a related question that was not asked, route refuse.
+   In `reason`, name the closest question the data can answer.
+4. Questions that need the ORDER of shots inside a rally need shot records,
+   which do not exist yet: the shot after the serve, the shot before a winner,
+   where the previous ball went. Route refuse, and do not use a direction share
+   in their place. A question about how often a player hits a shot, or where,
+   does not need the order: route sql.
+5. Questions about the score are sql: comebacks, breaks, momentum, pressure.
+   The score of every point is in the data.
+6. "Why" questions are sql. Report what happened: the breaks, the
+   highest-leverage points, and who won them. In `reason`, say that the data
+   shows what happened, not the cause.
+7. Speed, spin, emotion, body language, injuries and future results are not
+   in the data. Route refuse.

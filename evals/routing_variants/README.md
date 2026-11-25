@@ -1,0 +1,17 @@
+# Routing variants -- one change per step
+
+Each file is a full `<routing>` text. Each changes ONE thing from the one
+before, so a score change can be attributed (the sql/investigations rule).
+Score one with:
+
+    uv run python -u scripts/eval_routes.py --routing-file evals/routing_variants/v1.txt
+
+| File | Change from the previous |
+|---|---|
+| v0.txt | the `<routing>` in prompts.py on 2026-11-25 (D8) |
+| v1.txt | rule 2: answer the literal part even when the missing part is the main point |
+| v2.txt | rule 4: only questions that need the ORDER of shots refuse; "how often / where" is sql |
+| v3.txt | rule 8: the data covers 1960 to September 2026, so a year in that range is not the future |
+
+Examples inside a variant must not be eval questions -- the eval would then
+grade its own examples.

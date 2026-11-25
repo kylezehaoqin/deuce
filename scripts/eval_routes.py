@@ -1,6 +1,9 @@
 """Score the routing decision alone: expected route vs the model's route.
 
-    uv run python -u scripts/eval_routes.py [MODEL]
+    uv run python -u scripts/eval_routes.py [MODEL] [--routing-file PATH]
+
+--routing-file scores a variant <routing> text (evals/routing_variants/)
+instead of the one in prompts.py, so a change is measured before it is kept.
 
 Expands every question into its cases first (templates x fillers, D12; see
 src/deuce/evals/templates.py), then scores each case that has an expected
@@ -45,11 +48,11 @@ def decide_with_retry(decide, messages):
             time.sleep(RETRY_WAIT_SECONDS)
 
 
-def main(model: str | None) -> None:
+def main(model: str | None, routing: str = ROUTING) -> None:
     labels = yaml.safe_load((REPO_ROOT / "evals" / "route_labels.yml").read_text())
     questions = yaml.safe_load((REPO_ROOT / "questions.yml").read_text())["questions"]
     cases = [c for c in expand_all(questions, labels) if c.route]
-    system = assemble({"routing": ROUTING}).replace(
+    system = assemble({"routing": routing}).replace(
         SCHEMA_CONTEXT_PLACEHOLDER, build_schema_context()
     )
     decide = structured_decider(get_chat_model(model, timeout=60, max_retries=0))
@@ -80,4 +83,10 @@ def main(model: str | None) -> None:
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else None)
+    args = sys.argv[1:]
+    routing = ROUTING
+    if "--routing-file" in args:
+        i = args.index("--routing-file")
+        routing = (REPO_ROOT / args[i + 1]).read_text()
+        args = args[:i] + args[i + 2 :]
+    main(args[0] if args else None, routing)
