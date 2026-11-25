@@ -271,8 +271,8 @@ questions flip between runs at temperature 0.
 
 Roadmap after the answer node: Increment 2.5 (D11) -- verifier, name
 resolution, statistics, charts, clarify. T11 (behavioural momentum) is logged,
-untested; it needs the statistics step. Data note: dim_players flags Nadal's
-hand as ambiguous (3 R rows of 425) -- a majority rule is a decision for later.
+untested; it needs the statistics step. dim_players hand is a majority vote;
+is_hand_ambiguous is true only on a tie (D13), hand_agreement shows the share.
 
 Decisions waiting for Kyle, in priority order (Claude builds once decided):
 

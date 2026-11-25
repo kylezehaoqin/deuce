@@ -59,6 +59,31 @@ with player_matches as (
 
 ),
 
+hand_votes as (
+
+    -- How often each hand is recorded for each player. NULL hands (not
+    -- entered) are not votes.
+    select player_name, hand, count(*) as votes
+    from player_matches
+    where player_name is not null and hand is not null
+    group by 1, 2
+
+),
+
+hand_majority as (
+
+    select
+        player_name,
+        max(votes)::numeric / sum(votes)                         as hand_agreement,
+        -- A tie is the only case with no majority: e.g. L=1 R=1.
+        count(*) filter (where votes = (select max(v.votes) from hand_votes v
+                                        where v.player_name = hv.player_name)) > 1
+                                                                 as is_hand_tied
+    from hand_votes hv
+    group by 1
+
+),
+
 points_per_match as (
 
     select match_id, count(*) as points
@@ -72,13 +97,17 @@ final as (
     select
         pm.player_name,
 
-        -- mode() picks the most common value. A player's hand IS constant in
-        -- reality, but charters mistype it: 49 players have disagreeing rows,
-        -- including Nadal, Kvitova and Shapovalov. Majority vote resolves all
-        -- three correctly, where trusting whichever row sorted first would be a
-        -- coin flip. is_hand_ambiguous keeps the disagreement visible.
+        -- MAJORITY RULE (Kyle, 2026-11-25). A player's hand IS constant in
+        -- reality, but charters mistype it: 49 players have disagreeing rows.
+        -- Nadal is L in 420 of 425 matches; of the other 5, two are hands
+        -- SWAPPED with the opponent (Gabashvili 2010, Wawrinka 2017), one a
+        -- typo, two not entered. So `hand` is the majority, and
+        -- is_hand_ambiguous is true only with NO majority -- a tie (1 player).
+        -- It used to be true on any disagreement, which flagged 49, 39 of them
+        -- with a 90%+ majority. hand_agreement keeps the disagreement visible.
         mode() within group (order by pm.hand)          as hand,
-        count(distinct pm.hand) > 1                     as is_hand_ambiguous,
+        coalesce(min(hm.hand_agreement), 1.0)           as hand_agreement,
+        coalesce(bool_or(hm.is_hand_tied), false)       as is_hand_ambiguous,
 
         mode() within group (order by pm.tour)          as tour,
         count(distinct pm.tour) > 1                     as plays_both_tours,
@@ -102,6 +131,7 @@ final as (
         count(distinct pm.match_id) filter (where pm.match_date <  '2010-01-01') as matches_pre_2010
 
     from player_matches pm
+    left join hand_majority hm using (player_name)
     left join points_per_match ppm using (match_id)
     where pm.player_name is not null
     group by 1

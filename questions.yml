@@ -105,7 +105,7 @@ questions:
       - {"kind": "deep", "player": "Novak Djokovic"}
       - {"kind": "wta", "player": "Iga Swiatek"}
       - {"kind": "left_handed", "player": "Adrian Mannarino"}
-      - {"kind": "ambiguous_hand", "player": "Rafael Nadal", "must_state": "his handedness is inconsistent upstream (L in 420 of 425 matches)"}
+      - {"kind": "left_handed_deep", "player": "Rafael Nadal"}
       - {"kind": "thin", "player": "Arthur Cazaux", "must_state": "the sample is thin (12 charted matches)"}
       - {"kind": "absent", "player": "Teodor Vashkelny", "route": "refuse", "must_state": "the player is not in the data; no numbers"}
 
@@ -269,7 +269,7 @@ questions:
     fillers:
       - {"kind": "original", "player": "Roger Federer"}
       - {"kind": "wta", "player": "Serena Williams"}
-      - {"kind": "ambiguous_hand", "player": "Rafael Nadal"}
+      - {"kind": "left_handed_deep", "player": "Rafael Nadal"}
       - {"kind": "thin", "player": "Arthur Cazaux", "must_state": "Cazaux has 5 style cells: the comparison is thin"}
       - {"kind": "absent", "player": "Teodor Vashkelny", "route": "refuse", "must_state": "the player is not in the data; no numbers"}
 

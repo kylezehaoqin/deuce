@@ -170,7 +170,21 @@ models:
               config:
                 where: "hand is not null"
       - name: is_hand_ambiguous
-        description: True when charters disagreed about this player's handedness.
+        description: >
+          True only when there is NO majority hand (a tie, e.g. L=1 R=1). `hand`
+          is the majority. One typo in 425 matches no longer flags a player:
+          Nadal is L in 420 of 425 (two of the others are hands swapped with
+          the opponent). See hand_agreement for how strong the majority is.
+        data_tests: [not_null]
+      - name: hand_agreement
+        description: >
+          Share of a player's matches that record the majority hand. Below 1.0
+          means charters disagreed; low values on few matches (e.g. 0.60 on 5)
+          are weak evidence. 1.0 when no hand was ever recorded.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "between 0.5 and 1"
       - name: matches_charted
         description: Distinct matches. The first thing to check before trusting any rate about this player.
       - name: matches_2020s

@@ -260,3 +260,22 @@ matches.
 **Say it out loud:** "A test that only ever asks about Federer only tests
 Federer. I turned questions into templates and filled them with the hard
 cases: a thin sample, a misspelled name, a player who doesn't exist."
+
+## D13 -- When is a player's hand ambiguous?
+**Decided by:** Kyle   **Date:** 2026-11-25
+**Options:** (a) flag on ANY disagreement (the old rule); (b) majority rule:
+flag only when there is no majority.
+**Evidence:** the old flag caught 49 players; 39 of them had a 90%+ majority.
+Nadal is L in 420 of 425 matches. Of the other 5: two are hands SWAPPED with
+the opponent (Gabashvili 2010, Wawrinka 2017 -- both right-handers recorded
+as L), one a typo (vs Isner), two not entered. Only one player has no
+majority at all (Filippini, L=1 R=1).
+**Chosen:** (b). `hand` stays the majority (it already was); the flag is true
+only on a tie, so 1 player instead of 49; new `hand_agreement` shows the
+majority's share, so a weak majority on few matches (Bagnis 0.60 on 5) stays
+visible without a flag.
+**Knock-on:** the two eval fillers that used Nadal as "ambiguous hand" are now
+"left_handed_deep".
+**Say it out loud:** "One typo in 425 matches made Nadal 'ambiguous'. The
+typos were charters swapping the two players' hands. A majority vote fixes
+that, and the agreement share keeps the doubt visible where it is real."

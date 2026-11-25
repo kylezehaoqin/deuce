@@ -66,7 +66,7 @@ run once per **filler**:
 | deep | Novak Djokovic (553 matches) | the normal case |
 | wta | Iga Swiatek | the right tour baseline |
 | left_handed | Adrian Mannarino (not ambiguous) | handedness-dependent logic |
-| ambiguous_hand | Rafael Nadal (L in 420 of 425 matches) | inconsistent upstream data |
+| left_handed_deep | Rafael Nadal (L in 420 of 425 matches) | handedness logic on a deep-data player |
 | thin | Arthur Cazaux (12 matches) | does the answer say the sample is thin? |
 | name_variant | "Novak Djokovich" | name resolution |
 | absent | "Teodor Vashkelny" (closest real name: similarity 0.13) | refuse instead of inventing |

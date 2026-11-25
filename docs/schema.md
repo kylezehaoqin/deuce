@@ -263,7 +263,8 @@ erDiagram
   dim_players {
     text player_name PK
     text hand
-    boolean is_hand_ambiguous
+    numeric hand_agreement "majority share"
+    boolean is_hand_ambiguous "only on a tie"
     text tour
     boolean plays_both_tours
     bigint matches_charted
