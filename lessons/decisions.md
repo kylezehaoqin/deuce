@@ -279,3 +279,32 @@ visible without a flag.
 **Say it out loud:** "One typo in 425 matches made Nadal 'ambiguous'. The
 typos were charters swapping the two players' hands. A majority vote fixes
 that, and the agreement share keeps the doubt visible where it is real."
+
+## D14 -- Where does the tokenizer live?
+**Decided by:** Kyle   **Date:** 2026-11-25
+**Options:** (A) Python tokenizer + dbt; (B) all SQL in dbt; (C) the Rust
+parser in production (with a batch mode); (D) A, with Rust as an oracle.
+**Evidence:** the Rust parser (`~/dev/projects/match-sequence-parser`, 743
+lines, typed, 5 tests) builds after `rustup update`. Its JSON tokens are
+right, but its English tactical words are wrong ("backhand down the line" for
+a righty's backhand to a righty's backhand, which is crosscourt), and it drops
+an unknown code silently ("6b28f1Q2" lost "Q2"). Speed does not separate the
+options: a Python regex tokenizer split all 1,875,132 rallies (6,919,528 shot
+tokens) in 0.8 s; Rust at one process per rally takes 84 min, ~90% of it
+process start-up (2.39 ms), so a batch mode would take seconds. Tokenizing is
+a once-per-ingest batch, not on the path users wait for. Sackmann's oracles
+give counts per player, per match, per shot type and direction -- a strong
+check without a second implementation.
+**Chosen:** a Python tokenizer as a Dagster asset; hitter and tactical
+direction in a dbt `int_` model (window functions over ordered shots); verified
+against Sackmann's per-match oracles, plus ONE local diff of tokens against
+Rust's JSON. Rust stays out of CI and out of this repo. The tokenizer must
+raise on an unknown code.
+**Rejected:** Rust in production (a compiled black box in the lineage, Rust in
+CI, a second repo -- its main pro was time saved, not capability); Rust as a
+permanent oracle (the same costs); all SQL (tokenizer edge cases are hard to
+test in SQL).
+**Say it out loud:** "I had a working Rust parser and still chose Python. I
+measured it: speed didn't separate them, and Rust's real pro was time saved.
+I kept it as a one-off check -- that check already found it drops unknown
+codes silently."
