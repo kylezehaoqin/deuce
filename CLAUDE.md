@@ -276,27 +276,27 @@ is_hand_ambiguous is true only on a tie (D13), hand_agreement shows the share.
 
 **Where we left off (2026-11-25) -- read this first after a context clear.**
 
-1. *Routing over-refusal experiment, IN PROGRESS.* `evals/routing_variants/`
-   holds v0 (the current `<routing>`) and three one-change steps: v1 rule 2
-   stronger, v2 rule 4 narrower, v3 adds the data range (1960 to Sept 2026, so
-   2026 is not "the future"). Run one with
-   `uv run python -u scripts/eval_routes.py --routing-file evals/routing_variants/v1.txt`.
-   Scores so far (of 37): v0 26, 25; v1 25, 24; v2 24. The predicted +3 to +5
-   for v1 did NOT happen. NOISE IS LARGE: the same v0 text scored 21/36 two
-   days earlier. Next: per-case diff of the runs, then keep only a change that
-   beats v0 clearly; prompts.py is untouched until then.
-2. *Tokenizer decision (fct_shots), waiting for Kyle.* The Rust parser is at
-   `~/dev/projects/match-sequence-parser/code/tennis_parser` (743-line
-   main.rs, typed Shot/Serve/Point, `--json`, 5 unit tests). It takes ONE
-   rally per call (no batch/stdin), and its Shot has no hitter and no tactical
-   direction (crosscourt/DTL needs the previous shot -- any option must add
-   that layer). It does not build here: its Cargo.lock is v4, newer than the
-   installed Cargo (`rustup update` would fix it; machine-wide, so Kyle's call).
-   Options to present: Python tokenizer as a Dagster asset; SQL in dbt; the
-   Rust binary in production; Rust as the oracle for a Python one.
-3. *Session runs Claude Code 2.1.299 as a background daemon session; the CLI
-   is newer.* `/exit` only detaches. Restart: `kill <pid>`, then
-   `claude --resume <session-id>`.
+1. *Routing wording is exhausted as a lever.* v1-v3 (`evals/routing_variants/`,
+   results in its README) did not beat v0; all within noise (v0 scored 21-26
+   of 37 on the SAME text). v4 = v0 + the data date range (1960 to Sept 2026)
+   was being measured -- outputs in `/tmp/routing_runs/v4-*.txt`; if it holds
+   v0's level, copy v4 into `ROUTING` in prompts.py. The stable misses need
+   other fixes: name resolution (absent players), reword matchup-01 (its
+   "exploit" clause reads as tactical advice), column descriptions
+   (pressure-02: points are ordered by point_number; direction-02: direction +
+   handedness gives the target wing).
+2. *D14 decided: the tokenizer is Python* (a Dagster asset), hitter and
+   tactical direction in a dbt `int_` model, verified against Sackmann's
+   per-match oracles plus one local diff against the Rust parser at
+   `~/dev/projects/match-sequence-parser/code/tennis_parser` (builds now; its
+   English tactical words are wrong, and it drops unknown codes silently).
+   The tokenizer must raise on an unknown code. Not started.
+3. *Session runs Claude Code 2.1.299 as a background daemon session.* `/exit`
+   only detaches. Restart: `kill <pid>`, then `claude --resume <session-id>`.
+
+Next, in order: column descriptions (mine, fixes two stable misses); reword
+matchup-01; the `<grounding>` decision (unblocks the answer node and the
+answer eval); then build the D14 tokenizer -> `fct_shots`.
 
 Decisions waiting for Kyle, in priority order (Claude builds once decided):
 
