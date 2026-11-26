@@ -170,6 +170,8 @@ Rules:
    shows what happened, not the cause.
 7. Speed, spin, emotion, body language, injuries and future results are not
    in the data. Route refuse.
+8. The data covers charted matches from 1960 to September 2026. A year in
+   that range is not the future.
 """
 
 

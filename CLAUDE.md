@@ -279,8 +279,7 @@ is_hand_ambiguous is true only on a tie (D13), hand_agreement shows the share.
 1. *Routing wording is exhausted as a lever.* v1-v3 (`evals/routing_variants/`,
    results in its README) did not beat v0; all within noise (v0 scored 21-26
    of 37 on the SAME text). v4 = v0 + the data date range (1960 to Sept 2026)
-   was being measured -- outputs in `/tmp/routing_runs/v4-*.txt`; if it holds
-   v0's level, copy v4 into `ROUTING` in prompts.py. The stable misses need
+   scored 25, 25 (v0's level) and is now `ROUTING` in prompts.py. The stable misses need
    other fixes: name resolution (absent players), reword matchup-01 (its
    "exploit" clause reads as tactical advice), column descriptions
    (pressure-02: points are ordered by point_number; direction-02: direction +

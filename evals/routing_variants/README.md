@@ -28,3 +28,7 @@ fixing the 'future' reason removed a lucky refusal.
 
 Examples inside a variant must not be eval questions -- the eval would then
 grade its own examples.
+
+
+v4, two runs: 25, 25 -- v0's level. Adopted into prompts.py ROUTING on
+2026-11-25: the date rule fixes a real failure at no measurable cost.
